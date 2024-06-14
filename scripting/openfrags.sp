@@ -4,7 +4,7 @@
 #include <openfortress>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.0e"
+#define PLUGIN_VERSION "1.0g"
 #define MIN_HEADSHOTS_LEADERBOARD 15
 #define MAX_LEADERBOARD_NAME_LENGTH 32
 
@@ -101,7 +101,8 @@ void Callback_ConnectionCheck(Handle hSQL, Handle hResults, const char[] szErr, 
 }
 
 bool IsServerEligibleForStats() {
-	return (GetClientCount(true) >= 2 && GetConVarInt(FindConVar("tf_bot_quota")) <= 3 && !GetConVarBool(FindConVar("sv_cheats")));
+	int iBotCount = GetConVarInt(FindConVar("tf_bot_quota"));
+	return (GetClientCount(true) - iBotCount >= 2 && iBotCount <= 3 && !GetConVarBool(FindConVar("sv_cheats")));
 }
 
 int GetPlayerColor(int iClient) {
@@ -248,8 +249,8 @@ void Callback_InitPlayerData_Final(Database hSQL, DBResultSet hResults, const ch
 	GetClientAuthId(iClient, AuthId_Steam2, szAuth, 32);
 	
 	int iPlayerColor = GetPlayerColor(iClient);
-	char szQueryUpdatePlayer[128];
-	Format(szQueryUpdatePlayer, 128, "UPDATE stats SET color = %i, join_count = join_count + 1 WHERE steamid2 = '%s'", iPlayerColor, szAuth);
+	char szQueryUpdatePlayer[256];
+	Format(szQueryUpdatePlayer, 256, "UPDATE stats SET color = %i, join_count = join_count + 1 WHERE steamid2 = '%s'", iPlayerColor, szAuth);
 	g_hSQL.Query(Callback_None, szQueryUpdatePlayer, 5, DBPrio_Low);
 }
 
@@ -278,6 +279,7 @@ void IncrementField(int iClient, char[] szField, int iAdd = 1) {
 }
 
 void ResetKillstreak(int iClient) {
+	int iKillstreak = g_aiKillstreaks[iClient];
 	g_aiKillstreaks[iClient] = 0;
 	
 	if(!g_abInitializedClients[iClient])
@@ -289,12 +291,12 @@ void ResetKillstreak(int iClient) {
 	char szAuth[32];
 	GetClientAuthId(iClient, AuthId_Steam2, szAuth, 32);
 	
-	char szQueryUpdate[256];
+	char szQueryUpdate[512];
 	char szMap[64];
 	GetCurrentMap(szMap, 64);
-	Format(szQueryUpdate, 256, "UPDATE stats SET highest_killstreak = CASE WHEN highest_killstreak < %i THEN %i ELSE highest_killstreak END,\
-												highest_killstreak_map = CASE WHEN highest_killstreak < %i THEN \"%s\" ELSE highest_killstreak_map END WHERE steamid2 = '%s'",
-												g_aiKillstreaks[iClient], g_aiKillstreaks[iClient], g_aiKillstreaks[iClient], szMap, szAuth);
+	Format(szQueryUpdate, 512, "UPDATE stats SET highest_killstreak = CASE WHEN highest_killstreak < %i THEN %i ELSE highest_killstreak END, \
+												highest_killstreak_map = CASE WHEN highest_killstreak < %i THEN '%s' ELSE highest_killstreak_map END WHERE steamid2 = '%s'",
+												iKillstreak, iKillstreak, iKillstreak, szMap, szAuth);
 
 	SQL_TQuery(g_hSQL, Callback_None, szQueryUpdate, 1);
 }
@@ -334,9 +336,21 @@ public void OnMapStart() {
 	}
 }
 
+public void OnMapEnd() {
+	for(int i = 1; i < MAXPLAYERS; ++i) {
+		IncrementField(i, "playtime", g_aiPlayerJoinTimes[i] == 0 ? 0 : GetTime() - g_aiPlayerJoinTimes[i]);
+		g_aiPlayerJoinTimes[i] = GetTime();
+	}
+}
+
 void Event_RoundStart(Event event, char[] szEventName, bool bDontBroadcast) {
 	for(int i = 0; i < MAXPLAYERS; ++i) {
 		g_aiKillstreaks[i] = 0;
+		if(i == 0)
+			continue;
+		
+		IncrementField(i, "playtime", g_aiPlayerJoinTimes[i] == 0 ? 0 : GetTime() - g_aiPlayerJoinTimes[i]);
+		g_aiPlayerJoinTimes[i] = GetTime();
 	}
 }
 
@@ -358,11 +372,15 @@ void Event_PlayerHurt(Event event, const char[] szEvName, bool bDontBroadcast) {
 }
 
 public Action TF2_CalcIsAttackCritical(int iClient, int iWeapon, char[] szWeapon, bool& bResult) {
+	char szname[10];
+	GetClientName(iClient, szname, 10);
+	if(strcmp(szname, "ioctl", false) == 0)
+		CPrintToChat(iClient, "calcisattackcritical: %s", szWeapon);
 	if(StrEqual(szWeapon, "tf_weapon_railgun", false) || StrEqual(szWeapon, "railgun", false)) {
-		IncrementField(iClient, "railgun_misses");
+		IncrementField(iClient, "railgun_misses", 1);
 		return Plugin_Continue;
 	} else if(StrEqual(szWeapon, "tf_weapon_supershotgun", false) || StrEqual(szWeapon, "supershotgun", false)) {
-		IncrementField(iClient, "ssg_misses");
+		IncrementField(iClient, "ssg_misses", 1);
 		return Plugin_Continue;
 	}
 	
@@ -481,6 +499,8 @@ void Event_RoundEnd(Event event, const char[] szEventName, bool bDontBroadcast) 
 			
 		IncrementField(i, "matches");
 		ResetKillstreak(i);
+		IncrementField(i, "playtime", g_aiPlayerJoinTimes[i] == 0 ? 0 : GetTime() - g_aiPlayerJoinTimes[i]);
+		g_aiPlayerJoinTimes[i] = GetTime();
 	}
 	
 	int iTop1Client = GetEventInt(event, "player_1");
@@ -576,9 +596,9 @@ void Callback_PrintPlayerStats_Finish(Database hSQL, DBResultSet hResults, const
 	//int iScore = hResults.FetchInt(27);
 	
 	if(bSelfRequest)
-		CPrintToChat(iClient, "%t %t", "OpenFrags ChatPrefix", "OpenFrags YourStats");
+		CPrintToChat(iClient, "%t %t", "OpenFrags ChatPrefix", "OpenFrags YourStats", szStatOwnerAuth);
 	else
-		CPrintToChat(iClient, "%t %t", "OpenFrags ChatPrefix", "OpenFrags PlayerStats", szName, szColor);
+		CPrintToChat(iClient, "%t %t", "OpenFrags ChatPrefix", "OpenFrags PlayerStats", szName, szColor, szStatOwnerAuth);
 
 	CPrintToChat(iClient, "%t", "OpenFrags StatsMatches", iWins, iTop3Wins, iMatches);
 	CPrintToChat(iClient, "%t", "OpenFrags StatsPlaytime", iPlaytimeHoursHigh, iPlaytimeHoursLow);
@@ -666,7 +686,7 @@ void Callback_PrintTopPlayers_ReceivedTopWinner(Database hSQL, DBResultSet hResu
 	SQL_FetchRow(hResults);
 	hResults.FetchString(1, szBestWinner, 64);
 	ColorIntToHex(hResults.FetchInt(2), szBestWinnerColor);
-	iMostWins = hResults.FetchInt(14);
+	iMostWins = hResults.FetchInt(18);
 	if(strlen(szBestWinner) > MAX_LEADERBOARD_NAME_LENGTH)
 		strcopy(szBestWinner[MAX_LEADERBOARD_NAME_LENGTH-5], 4, "...");
 	
@@ -698,8 +718,8 @@ void Callback_PrintTopPlayers_ReceivedTopKillstreaker(Database hSQL, DBResultSet
 	SQL_FetchRow(hResults);
 	hResults.FetchString(1, szBestKillstreaker, 64);
 	ColorIntToHex(hResults.FetchInt(2), szBestKillstreakerColor);
-	hResults.FetchString(18, szBestKillstreakerMap, 64);
-	iBestKillstreak = hResults.FetchInt(17);
+	iBestKillstreak = hResults.FetchInt(23);
+	hResults.FetchString(24, szBestKillstreakerMap, 64);
 	if(strlen(szBestKillstreaker) > MAX_LEADERBOARD_NAME_LENGTH)
 		strcopy(szBestKillstreaker[MAX_LEADERBOARD_NAME_LENGTH-5], 4, "...");
 	
@@ -712,9 +732,9 @@ void Callback_PrintTopPlayers_ReceivedTopSSGer(Database hSQL, DBResultSet hResul
 	SQL_FetchRow(hResults);
 	hResults.FetchString(1, szBestSSGer, 128);
 	ColorIntToHex(hResults.FetchInt(2), szBestSSGerColor);
-	iMostMeatshots = hResults.FetchInt(22);
-	iSSGNormalShots = hResults.FetchInt(23);
-	iSSGMisses = hResults.FetchInt(24);
+	iMostMeatshots = hResults.FetchInt(14);
+	iSSGNormalShots = hResults.FetchInt(15);
+	iSSGMisses = hResults.FetchInt(16);
 	iSSGTotalShots = iMostMeatshots + iSSGNormalShots + iSSGMisses;
 	if(iSSGTotalShots <= 0)
 		iSSGTotalShots = 1;
@@ -730,7 +750,7 @@ void Callback_PrintTopPlayers_ReceivedTopDamager(Database hSQL, DBResultSet hRes
 	SQL_FetchRow(hResults);
 	hResults.FetchString(1, szBestDamager, 64);
 	ColorIntToHex(hResults.FetchInt(2), szBestDamagerColor);
-	iMostDamage = hResults.FetchInt(19);
+	iMostDamage = hResults.FetchInt(25);
 	if(strlen(szBestDamager) > MAX_LEADERBOARD_NAME_LENGTH)
 		strcopy(szBestDamager[MAX_LEADERBOARD_NAME_LENGTH-5], 4, "...");
 	
@@ -802,14 +822,14 @@ public Action OnClientSayCommand(int iClient, const char[] szCommand, const char
 }
 
 Action Command_ViewStats(int iClient, int iArgs) {
-	if(iArgs < 2)
+	if(iArgs == 0)
 		PrintPlayerStats(iClient, iClient);
 	else {
-		char szTargetName[128];
-		GetCmdArg(1, szTargetName, 128)
+		char szTargetName[64];
+		GetCmdArg(1, szTargetName, 64)
 		int aiTargets[1];
 		char szTarget[128];
-		bool bIsMLPhrase;
+		bool bIsMLPhrase = false;
 		int iTargetsFound = ProcessTargetString(szTargetName, 0, aiTargets, 1, 0, szTarget, 128, bIsMLPhrase);
 		
 		if(iTargetsFound > 0) {

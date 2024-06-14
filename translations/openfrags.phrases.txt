@@ -11,12 +11,13 @@
 	}
 	"OpenFrags YourStats"
 	{
-		"en"			"Your stats:"
+		"#format"		"{1:s}"
+		"en"			"Your stats: (more at https://openfrags.ohaa.xyz/epicgamer/{1})"
 	}
 	"OpenFrags PlayerStats"
 	{
-		"#format"		"{1:s},{2:s}"
-		"en"			"{2}{1}{default}'s stats:"
+		"#format"		"{1:s},{2:s},{3:s}"
+		"en"			"{2}{1}{default}'s stats: (more at https://openfrags.ohaa.xyz/epicgamer/{1})"
 	}
 	"OpenFrags UninitializedSelf"
 	{
@@ -74,7 +75,7 @@
 	}
 	"OpenFrags TopPlayers"
 	{
-		"en"			"Top players:"
+		"en"			"Top players: (more at https://openfrags.ohaa.xyz/frags/top)"
 	}
 	"OpenFrags TopFragger"
 	{
@@ -93,8 +94,8 @@
 	}
 	"OpenFrags TopSSGer"
 	{
-		"#format"		"{1:s},{2:s},{3:i}"
-		"en"			"{default}Most SSG Meatshots: {2}{1} {default}- {3}"
+		"#format"		"{1:s},{2:s},{3:i},{4:i},{5:i}"
+		"en"			"{default}Most SSG Meatshots: {2}{1} {default}- {3} ({4}.{5}%% of total shots)"
 	}
 	"OpenFrags TopDamager"
 	{
