@@ -7,17 +7,17 @@
 	"OpenFrags About"
 	{
 		"#format"		"{1:s}"
-		"en"			"OpenFrags is a sourcemod plugin that enables cross-server stat tracking\nLearn more at https://openfrags.ohaa.xyz\nPlugin version: {1}"
+		"en"			"OpenFrags is a SourceMod plugin that enables cross-server stat tracking and viewing using fancy web pages and chat commands\nLearn more at openfrags.ohaa.xyz\nPlugin version: {1}"
 	}
 	"OpenFrags YourStats"
 	{
 		"#format"		"{1:s}"
-		"en"			"Your stats: (more at https://openfrags.ohaa.xyz/epicgamer/{1})"
+		"en"			"Your stats: (more at openfrags.ohaa.xyz/epicgamer/{1})"
 	}
 	"OpenFrags PlayerStats"
 	{
 		"#format"		"{1:s},{2:s},{3:s}"
-		"en"			"{2}{1}{default}'s stats: (more at https://openfrags.ohaa.xyz/epicgamer/{1})"
+		"en"			"{2}{1}{default}'s stats: (more at openfrags.ohaa.xyz/epicgamer/{1})"
 	}
 	"OpenFrags UninitializedSelf"
 	{
@@ -75,7 +75,7 @@
 	}
 	"OpenFrags TopPlayers"
 	{
-		"en"			"Top players: (more at https://openfrags.ohaa.xyz/frags/top)"
+		"en"			"Top players: (more at openfrags.ohaa.xyz/frags/top)"
 	}
 	"OpenFrags TopFragger"
 	{

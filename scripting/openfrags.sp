@@ -4,7 +4,7 @@
 #include <openfortress>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.0g"
+#define PLUGIN_VERSION "1.1"
 #define MIN_HEADSHOTS_LEADERBOARD 15
 #define MAX_LEADERBOARD_NAME_LENGTH 32
 
@@ -79,7 +79,7 @@ void Callback_DatabaseConnected(Handle hDriver, Database hSQL, const char[] szEr
 Action Loop_ConnectionCheck(Handle hTimer) {
 	if(!IsValidHandle(g_hSQL)) {
 		SQL_TConnect(Callback_DatabaseConnected, "openfrags");
-		CreateTimer(180.0, Loop_ConnectionCheck);
+		CreateTimer(120.0, Loop_ConnectionCheck);
 		return Plugin_Handled;
 	}
 	
@@ -360,10 +360,9 @@ void Event_PlayerHurt(Event event, const char[] szEvName, bool bDontBroadcast) {
 
 	int iDamageTaken = GetEventInt(event, "damageamount");
 	if(iDamageTaken > 300 || iDamageTaken < -300)
-		iDamageTaken = 0;
-
-	if(iDamageTaken != 0)
-		IncrementField(iVictim, "damage_taken", iDamageTaken);
+		return;
+	
+	IncrementField(iVictim, "damage_taken", iDamageTaken);
 	
 	if(iAttacker == iVictim || iAttacker == 0)
 		return;
@@ -372,10 +371,6 @@ void Event_PlayerHurt(Event event, const char[] szEvName, bool bDontBroadcast) {
 }
 
 public Action TF2_CalcIsAttackCritical(int iClient, int iWeapon, char[] szWeapon, bool& bResult) {
-	char szname[10];
-	GetClientName(iClient, szname, 10);
-	if(strcmp(szname, "ioctl", false) == 0)
-		CPrintToChat(iClient, "calcisattackcritical: %s", szWeapon);
 	if(StrEqual(szWeapon, "tf_weapon_railgun", false) || StrEqual(szWeapon, "railgun", false)) {
 		IncrementField(iClient, "railgun_misses", 1);
 		return Plugin_Continue;
@@ -767,7 +762,7 @@ void PrintTopPlayers_Finish(int iClient) {
 	
 	CPrintToChat(iClient, "%t %t", "OpenFrags ChatPrefix", "OpenFrags TopPlayers");
 	CPrintToChat(iClient, "%t", "OpenFrags TopFragger", szBestFragger, szBestFraggerColor, iMostFrags);
-	CPrintToChat(iClient, "%t", "OpenFrags TopWinnerCount", szBestWinner, szBestWinnerColor, iMostWins);
+	CPrintToChat(iClient, "%t", "OpenFrags TopWinnerRate", szBestWinner, szBestWinnerColor, iMostWins);
 	CPrintToChat(iClient, "%t", "OpenFrags TopHeadshotter", szBestHeadshotter, szBestHeadshotterColor, iBestHSRateHigh, iBestHSRateLow);
 	CPrintToChat(iClient, "%t", "OpenFrags TopKillstreaker", szBestKillstreaker, szBestKillstreakerColor, iBestKillstreak, szBestKillstreakerMap);
 	CPrintToChat(iClient, "%t", "OpenFrags TopSSGer", szBestSSGer, szBestSSGerColor, iMostMeatshots, iMeatshotRateHigh, iMeatshotRateLow);
