@@ -1,0 +1,109 @@
+"Phrases"
+{
+	"OpenFrags ChatPrefix"
+	{
+		"en"			"[OF]"
+	}
+	"OpenFrags YourStats"
+	{
+		"en"			"Your stats:"
+	}
+	"OpenFrags PlayerStats"
+	{
+		"#format"		"{1:s},{2:s}"
+		"en"			"{2}{1}{default}'s stats:"
+	}
+	"OpenFrags UninitializedSelf"
+	{
+		"en"			"Your stats are currently unavailable, have you tried rejoining the server?"
+	}
+	"OpenFrags UninitializedPlayer"
+	{
+		"#format"		"{1:s}"
+		"en"			"{1}'s stats are currently unavailable"
+	}
+	"OpenFrags StatsPlaytime"
+	{
+		"#format"		"{1:i},{2:i}"
+		"en"			"Playtime: {1}.{2} hours"
+	}
+	"OpenFrags StatsKD"
+	{
+		"#format"		"{1:i},{2:i},{3:f}"
+		"en"			"K/D/R: {1}/{2}/{3}"
+	}
+	"OpenFrags StatsRGHeadshots"
+	{
+		"#format"		"{1:i},{2:i},{3:i}"
+		"en"			"Railgun headshots: {1} ({2}.{3}%% of total shots)"
+	}
+	"OpenFrags StatsAirshots"
+	{
+		"#format"		"{1:i},{2:i}"
+		"en"			"RL/GL airshots: {1}/{2}"
+	}
+	"OpenFrags StatsSSG"
+	{
+		"#format"		"{1:i},{2:i},{3:i}"
+		"en"			"SSG meatshots/normal/misses: {1}/{2}/{3}"
+	}
+	"OpenFrags StatsMeleeAndPowerupKills"
+	{
+		"#format"		"{1:i},{2:i}"
+		"en"			"Melee/Powerup kills: {1}/{2}"
+	}
+	"OpenFrags StatsHighestKillstreak"
+	{
+		"#format"		"{1:i},{2:s}"
+		"en"			"Highest killstreak: {1} frags on {2}"
+	}
+	"OpenFrags StatsMatches"
+	{
+		"#format"		"{1:i},{2:i},{3:i}"
+		"en"			"Wins/Top 3s/Matches: {1}/{2}/{3}"
+	}
+	"OpenFrags StatsDamage"
+	{
+		"#format"		"{1:i},{2:i}"
+		"en"			"Damage dealt/taken: {1}/{2}"
+	}
+	"OpenFrags TopPlayers"
+	{
+		"en"			"Top players:"
+	}
+	"OpenFrags TopFragger"
+	{
+		"#format"		"{1:s},{2:s},{3:i}"
+		"en"			"{default}Most Frags: {2}{1} {default}- {3} kills"
+	}
+	"OpenFrags TopHeadshotter"
+	{
+		"#format"		"{1:s},{2:s},{3:i},{4:i}"
+		"en"			"{default}Highest Railgun HS%%: {2}{1} {default}- {3}.{4}%% of total shots"
+	}
+	"OpenFrags TopKillstreaker"
+	{
+		"#format"		"{1:s},{2:s},{3:i},{4:s}"
+		"en"			"{default}Highest Killstreak: {2}{1} {default}- {3} frags on {4}"
+	}
+	"OpenFrags TopSSGer"
+	{
+		"#format"		"{1:s},{2:s},{3:i}"
+		"en"			"{default}Most SSG Meatshots: {2}{1} {default}- {3}"
+	}
+	"OpenFrags TopDamager"
+	{
+		"#format"		"{1:s},{2:s},{3:i}"
+		"en"			"{default}Most Damage Dealt: {2}{1} {default}- {3}"
+	}
+	"OpenFrags TopWinnerCount"
+	{
+		"#format"		"{1:s},{2:s},{3:i}"
+		"en"			"{default}Most Wins: {2}{1} {default}- {3} wins"
+	}
+	"OpenFrags TopWinnerRate"
+	{
+		"#format"		"{1:s},{2:s},{3:i},{4:i},{5:i}"
+		"en"			"{default}Highest winrate: {2}{1} {default}- {3}.{4}%% ({5} total wins)"
+	}
+}
