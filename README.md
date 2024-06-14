@@ -1,5 +1,5 @@
 # About
-OpenFrags is a SourceMod plugin for [Open Fortress](https://openfortress.fun) that allows cross-server stat tracking and viewing it using fancy web pages and chat commands
+OpenFrags is a SourceMod plugin for [Open Fortress](https://openfortress.fun) that allows cross-server stat tracking and viewing it using fancy web pages and chat commands  
 More info at http://openfrags.ohaa.xyz
 
 #### Server commands:
