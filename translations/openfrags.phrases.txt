@@ -12,12 +12,12 @@
 	"OpenFrags YourStats"
 	{
 		"#format"		"{1:s}"
-		"en"			"Your stats: (more at openfrags.ohaa.xyz/epicgamer/{1})"
+		"en"			"Your stats: (more at openfrags.ohaa.xyz/u/{1})"
 	}
 	"OpenFrags PlayerStats"
 	{
 		"#format"		"{1:s},{2:s},{3:s}"
-		"en"			"{2}{1}{default}'s stats: (more at openfrags.ohaa.xyz/epicgamer/{1})"
+		"en"			"{2}{1}{default}'s stats: (more at openfrags.ohaa.xyz/u/{1})"
 	}
 	"OpenFrags UninitializedSelf"
 	{
@@ -75,7 +75,7 @@
 	}
 	"OpenFrags TopPlayers"
 	{
-		"en"			"Top players: (more at openfrags.ohaa.xyz/frags/top)"
+		"en"			"Top players: (more at openfrags.ohaa.xyz/top)"
 	}
 	"OpenFrags TopFragger"
 	{
