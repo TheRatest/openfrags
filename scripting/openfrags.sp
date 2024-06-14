@@ -302,7 +302,7 @@ void ResetKillstreak(int iClient) {
 // for threaded fast queries
 void Callback_None(Database hSQL, DBResultSet hResults, const char[] szErr, any data) {
 	if(!IsValidHandle(hSQL) || strlen(szErr) > 0) {
-		LogError("<!> Threaded fast query failed (%s)", data);
+		LogError("<!> Threaded fast query failed (%i): %s", data, szErr);
 	}
 }
 
