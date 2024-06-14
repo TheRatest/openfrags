@@ -4,7 +4,7 @@
 #include <openfortress>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.0d"
+#define PLUGIN_VERSION "1.0e"
 #define MIN_HEADSHOTS_LEADERBOARD 15
 #define MAX_LEADERBOARD_NAME_LENGTH 32
 
@@ -267,14 +267,14 @@ void IncrementField(int iClient, char[] szField, int iAdd = 1) {
 	GetClientAuthId(iClient, AuthId_Steam2, szAuth, 32);
 	
 	char szQuery[512];
-	Format(szQuery, 512, "UPDATE stats SET\
-										%s = %s + %i,\
-										railgun_headshotrate = railgun_headshots / (railgun_headshots + railgun_bodyshots + railgun_misses),\
-										kdr = frags / deaths,\
-										winrate = wins / matches\
+	Format(szQuery, 512, "UPDATE stats SET \
+										%s = (%s + %i), \
+										railgun_headshotrate = (railgun_headshots / (CASE WHEN railgun_headshots + railgun_bodyshots + railgun_misses = 0 THEN 1 ELSE railgun_headshots + railgun_bodyshots + railgun_misses END)), \
+										kdr = (frags / CASE WHEN deaths = 0 THEN 1 ELSE deaths END), \
+										winrate = (wins / CASE WHEN matches = 0 THEN 1 ELSE matches END) \
 										WHERE steamid2 = '%s'", szField, szField, iAdd, szAuth);
 
-	SQL_TQuery(g_hSQL, Callback_None, szQuery, 0, DBPrio_Low);
+	g_hSQL.Query(Callback_None, szQuery, 0, DBPrio_Low);
 }
 
 void ResetKillstreak(int iClient) {
@@ -323,7 +323,7 @@ public void OnClientPutInServer(int iClient) {
 
 public void OnClientDisconnect(int iClient) {
 	ResetKillstreak(iClient);
-	IncrementField(iClient, "playtime", GetTime() - g_aiPlayerJoinTimes[iClient]);
+	IncrementField(iClient, "playtime", g_aiPlayerJoinTimes[iClient] == 0 ? 0 : GetTime() - g_aiPlayerJoinTimes[iClient]);
 	g_abInitializedClients[iClient] = false;
 	g_aiPlayerJoinTimes[iClient] = 0;
 }
