@@ -2,7 +2,12 @@
 {
 	"OpenFrags ChatPrefix"
 	{
-		"en"			"[OF]"
+		"en"			"{mediumpurple}[OF]{default}"
+	}
+	"OpenFrags About"
+	{
+		"#format"		"{1:s}"
+		"en"			"OpenFrags is a sourcemod plugin that enables cross-server stat tracking\nLearn more at https://openfrags.ohaa.xyz\nPlugin version: {1}"
 	}
 	"OpenFrags YourStats"
 	{
