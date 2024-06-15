@@ -4,9 +4,21 @@
 #include <openfortress>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.1a"
+#define PLUGIN_VERSION "1.1b"
 #define MIN_HEADSHOTS_LEADERBOARD 15
 #define MAX_LEADERBOARD_NAME_LENGTH 32
+
+enum {
+	OFMutator_None = 0,
+	OFMutator_Instagib = 1,
+	OFMutator_InstagibNoCrowbar = 2,
+	OFMutator_ClanArena = 3,
+	OFMutator_UnholyTrinity = 4,
+	OFMutator_RocketArena = 5,
+	OFMutator_GunGame = 6,
+	OFMutator_Arsenal = 7,
+	OFMutator_EternalShotguns = 8,
+};
 
 Database g_hSQL;
 
@@ -102,7 +114,13 @@ void Callback_ConnectionCheck(Handle hSQL, Handle hResults, const char[] szErr, 
 
 bool IsServerEligibleForStats() {
 	int iBotCount = GetConVarInt(FindConVar("tf_bot_quota"));
-	return (GetClientCount(true) - iBotCount >= 2 && iBotCount <= 3 && !GetConVarBool(FindConVar("sv_cheats")));
+	int iMutator = GetConVarInt(FindConVar("of_mutator"));
+	return (GetClientCount(true) - iBotCount >= 2 &&
+			iBotCount <= 3 &&
+			(iMutator == OFMutator_None ||
+			iMutator == OFMutator_Arsenal ||
+			iMutator == OFMutator_ClanArena) &&
+			!GetConVarBool(FindConVar("sv_cheats")));
 }
 
 int GetPlayerColor(int iClient) {
@@ -296,9 +314,10 @@ void ResetKillstreak(int iClient) {
 	char szQueryUpdate[512];
 	char szMap[64];
 	GetCurrentMap(szMap, 64);
-	Format(szQueryUpdate, 512, "UPDATE stats SET highest_killstreak = CASE WHEN highest_killstreak < %i THEN %i ELSE highest_killstreak END, \
-												highest_killstreak_map = CASE WHEN highest_killstreak < %i THEN '%s' ELSE highest_killstreak_map END WHERE steamid2 = '%s'",
-												iKillstreak, iKillstreak, iKillstreak, szMap, szAuth);
+	Format(szQueryUpdate, 512, "SELECT highest_killstreak < %i INTO @new_ks FROM stats WHERE steamid2 = '%s'; \
+								UPDATE stats SET highest_killstreak = CASE WHEN @new_ks THEN %i ELSE highest_killstreak END, \
+												highest_killstreak_map = CASE WHEN @new_ks THEN '%s' ELSE highest_killstreak_map END WHERE steamid2 = '%s'",
+												iKillstreak, szAuth, iKillstreak, szMap, szAuth);
 
 	SQL_TQuery(g_hSQL, Callback_None, szQueryUpdate, 1);
 }
@@ -807,16 +826,22 @@ public Action OnClientSayCommand(int iClient, const char[] szCommand, const char
 	char szChatCommand[63];
 	strcopy(szChatCommand, 63, szArgs[0][1]);
 	
-	if(szArgs[0][0] != '/' && szArgs[0][0] != '!')
+	Action retval = Plugin_Continue;
+	if(szArgs[0][0] == '/') {
+		retval = Plugin_Stop;
+	} else if(szArgs[0][0] != '!') {
+		retval = Plugin_Continue;
+	} else {
 		return Plugin_Continue;
+	}
 	
 	if(StrEqual(szChatCommand, "stats", false) && iArgs == 1) {
 		PrintPlayerStats(iClient, iClient);
-		return Plugin_Continue;
+		return retval;
 	}
 	if(StrEqual(szChatCommand, "top", false) || StrEqual(szChatCommand, "leaderboard", false)) {
 		PrintTopPlayers(iClient);
-		return Plugin_Continue;
+		return retval;
 	}
 	if(StrEqual(szChatCommand, "stats", false)) {
 		int aiTargets[1];
@@ -825,7 +850,7 @@ public Action OnClientSayCommand(int iClient, const char[] szCommand, const char
 		int iTargetsFound = ProcessTargetString(szArgs[1], 0, aiTargets, 1, 0, szTarget, 128, bIsMLPhrase);
 		if(iTargetsFound > 0) {
 			PrintPlayerStats(iClient, aiTargets[0]);
-			return Plugin_Continue;
+			return retval;
 		} else {
 			char szAuth[32];
 			strcopy(szAuth, 32, szArgs[1]);
@@ -834,11 +859,11 @@ public Action OnClientSayCommand(int iClient, const char[] szCommand, const char
 			ReplaceString(szAuth, 32, "\"", "");
 			ReplaceString(szAuth, 32, "\\", "");
 			PrintPlayerStats(iClient, -1, szAuth);
-			return Plugin_Continue;
+			return retval;
 		}
 	}
 	
-	return Plugin_Continue;
+	return retval;
 }
 
 Action Command_ViewStats(int iClient, int iArgs) {
