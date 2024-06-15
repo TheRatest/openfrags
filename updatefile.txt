@@ -4,12 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"	"1.2a"
+			"Latest"	"1.2b"
 		}
 		
 		"Notes"	"More info @ openfrags.ohaa.xyz"
-		"Notes"	"Fixed killstreak update bug"
-		"Notes" "Fixed ! chat command bug"
+		"Notes"	"Fixed ANOTHER !!!! killstreak update bug"
 	}
 	
 	"Files"
