@@ -3,8 +3,10 @@
 #include <sdktools>
 #include <openfortress>
 #include <morecolors>
+#include <updater>
 
-#define PLUGIN_VERSION "1.1b"
+#define PLUGIN_VERSION "1.1.1"
+#define UPDATE_URL "git.ohaa.xyz/ratest/openfrags/raw/branch/main/updatefile.txt"
 #define MIN_HEADSHOTS_LEADERBOARD 15
 #define MAX_LEADERBOARD_NAME_LENGTH 32
 
@@ -52,6 +54,18 @@ public void OnPluginStart() {
 	
 	CreateTimer(60.0, Loop_ConnectionCheck);
 	AddServerTagRat("openfrags");
+	
+	if(LibraryExists("updater")) {
+		Updater_AddPlugin(UPDATE_URL);
+	}
+}
+
+public OnLibraryAdded(const char[] szName)
+{
+    if(StrEqual(szName, "updater"))
+    {
+        Updater_AddPlugin(UPDATE_URL)
+    }
 }
 
 void Callback_DatabaseConnected(Handle hDriver, Database hSQL, const char[] szErr, any unused) {

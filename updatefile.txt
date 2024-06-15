@@ -1,0 +1,20 @@
+"Updater"
+{
+	"Information"
+	{
+		"Version"
+		{
+			"Latest"	"1.1.1"
+		}
+		
+		"Notes"	"More info @ openfrags.ohaa.xyz."
+	}
+	
+	"Files"
+	{
+		"Plugin"	"Path_SM/plugins/openfrags.smx"
+		"Plugin"	"Path_SM/translations/openfrags.phrases.txt"
+		
+		"Source"	"Path_SM/scripting/myplugin.sp"
+	}
+}
