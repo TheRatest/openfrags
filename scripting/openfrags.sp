@@ -4,7 +4,7 @@
 #include <openfortress>
 #include <morecolors>
 
-#define PLUGIN_VERSION "1.1"
+#define PLUGIN_VERSION "1.1a"
 #define MIN_HEADSHOTS_LEADERBOARD 15
 #define MAX_LEADERBOARD_NAME_LENGTH 32
 
@@ -787,7 +787,7 @@ void PrintTopPlayers_Finish(int iClient) {
 	
 	CPrintToChat(iClient, "%t %t", "OpenFrags ChatPrefix", "OpenFrags TopPlayers");
 	CPrintToChat(iClient, "%t", "OpenFrags TopFragger", szBestFragger, szBestFraggerColor, iMostFrags);
-	CPrintToChat(iClient, "%t", "OpenFrags TopWinnerRate", szBestWinner, szBestWinnerColor, iMostWins);
+	CPrintToChat(iClient, "%t", "OpenFrags TopWinnerCount", szBestWinner, szBestWinnerColor, iMostWins);
 	CPrintToChat(iClient, "%t", "OpenFrags TopHeadshotter", szBestHeadshotter, szBestHeadshotterColor, iBestHSRateHigh, iBestHSRateLow);
 	CPrintToChat(iClient, "%t", "OpenFrags TopKillstreaker", szBestKillstreaker, szBestKillstreakerColor, iBestKillstreak, szBestKillstreakerMap);
 	CPrintToChat(iClient, "%t", "OpenFrags TopSSGer", szBestSSGer, szBestSSGerColor, iMostMeatshots, iMeatshotRateHigh, iMeatshotRateLow);
