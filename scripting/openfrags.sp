@@ -6,7 +6,7 @@
 #include <updater>
 
 #define PLUGIN_VERSION "1.2"
-#define UPDATE_URL "git.ohaa.xyz/ratest/openfrags/raw/branch/main/updatefile.txt"
+#define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/src/branch/main/updatefile.txt"
 #define MIN_HEADSHOTS_LEADERBOARD 15
 #define MAX_LEADERBOARD_NAME_LENGTH 32
 
