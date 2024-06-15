@@ -252,6 +252,8 @@ void Callback_InitPlayerData_Final(Database hSQL, DBResultSet hResults, const ch
 	char szQueryUpdatePlayer[256];
 	Format(szQueryUpdatePlayer, 256, "UPDATE stats SET color = %i, join_count = join_count + 1 WHERE steamid2 = '%s'", iPlayerColor, szAuth);
 	g_hSQL.Query(Callback_None, szQueryUpdatePlayer, 5, DBPrio_Low);
+	
+	OnClientDataInitialized(iClient);
 }
 
 void IncrementField(int iClient, char[] szField, int iAdd = 1) {
@@ -261,7 +263,7 @@ void IncrementField(int iClient, char[] szField, int iAdd = 1) {
 	if(!g_abInitializedClients[iClient])
 		return;
 		
-	if(!IsServerEligibleForStats() && strcmp(szField, "playtime") != 0)
+	if(!IsServerEligibleForStats())
 		return;
 	
 	char szAuth[32];
@@ -317,6 +319,29 @@ public void OnClientAuthorized(int iClient, const char[] szAuth) {
 	g_aiKillstreaks[iClient] = 0;
 	
 	InitPlayerData(iClient);
+}
+
+// resets everyone's join times whenever the server becomes eligible for stat tracking, and updates playtimes if it already is
+void OnClientDataInitialized(int iClient) {
+	if(IsServerEligibleForStats()) {
+		for(int i = 1; i < MaxClients; ++i) {
+			if(!IsClientInGame(i))
+				continue;
+				
+			if(!g_abInitializedClients[i])
+				continue;
+	
+			IncrementField(i, "playtime", g_aiPlayerJoinTimes[i] == 0 ? 0 : GetTime() - g_aiPlayerJoinTimes[i]);
+			g_aiPlayerJoinTimes[i] = GetTime();
+		}
+	} else {
+		for(int i = 1; i < MaxClients; ++i) {
+			if(!IsClientInGame(i))
+				continue;
+				
+			g_aiPlayerJoinTimes[i] = GetTime();
+		}
+	}
 }
 
 public void OnClientPutInServer(int iClient) {
