@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "1.2"
+#define PLUGIN_VERSION "1.2a"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/main/updatefile.txt"
 #define MIN_HEADSHOTS_LEADERBOARD 15
 #define MAX_LEADERBOARD_NAME_LENGTH 32
@@ -328,9 +328,8 @@ void ResetKillstreak(int iClient) {
 	char szQueryUpdate[512];
 	char szMap[64];
 	GetCurrentMap(szMap, 64);
-	Format(szQueryUpdate, 512, "SELECT highest_killstreak < %i INTO @new_ks FROM stats WHERE steamid2 = '%s'; \
-								UPDATE stats SET highest_killstreak = CASE WHEN @new_ks THEN %i ELSE highest_killstreak END, \
-												highest_killstreak_map = CASE WHEN @new_ks THEN '%s' ELSE highest_killstreak_map END WHERE steamid2 = '%s'",
+	Format(szQueryUpdate, 512, "UPDATE stats SET highest_killstreak = CASE WHEN highest_killstreak < %i THEN %i ELSE highest_killstreak END, \
+												highest_killstreak_map = CASE WHEN highest_killstreak = %i THEN '%s' ELSE highest_killstreak_map END WHERE steamid2 = '%s'",
 												iKillstreak, szAuth, iKillstreak, szMap, szAuth);
 
 	SQL_TQuery(g_hSQL, Callback_None, szQueryUpdate, 1);
@@ -843,7 +842,7 @@ public Action OnClientSayCommand(int iClient, const char[] szCommand, const char
 	Action retval = Plugin_Continue;
 	if(szArgs[0][0] == '/') {
 		retval = Plugin_Stop;
-	} else if(szArgs[0][0] != '!') {
+	} else if(szArgs[0][0] == '!') {
 		retval = Plugin_Continue;
 	} else {
 		return Plugin_Continue;
