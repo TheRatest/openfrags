@@ -4,15 +4,23 @@
 	{
 		"Version"
 		{
-			"Latest"	"1.2b"
+			"Latest"	"1.2c"
+			"Previous"	"1.2b"
 		}
 		
 		"Notes"	"More info @ openfrags.ohaa.xyz"
-		"Notes"	"Fixed ANOTHER !!!! killstreak update bug"
+		"Notes"	"more tools for troubleshooting"
 	}
 	
 	"Files"
 	{
+		"Patch"
+		{
+			"Plugin"	"Path_SM/plugins/openfrags.smx"
+			
+			"Source"	"Path_SM/scripting/myplugin.sp"
+		}
+		
 		"Plugin"	"Path_SM/plugins/openfrags.smx"
 		"Plugin"	"Path_SM/translations/openfrags.phrases.txt"
 		

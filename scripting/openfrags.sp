@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "1.2b"
+#define PLUGIN_VERSION "1.2c"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/main/updatefile.txt"
 #define MIN_HEADSHOTS_LEADERBOARD 15
 #define MAX_LEADERBOARD_NAME_LENGTH 32
@@ -49,6 +49,9 @@ public void OnPluginStart() {
 	RegConsoleCmd("sm_openfrags_stats", Command_ViewStats, "View your stats (or someone else's)");
 	RegConsoleCmd("sm_openfrags_top", Command_ViewTop, "View the top players");
 	RegConsoleCmd("sm_openfrags_leaderboard", Command_ViewTop, "Alias for sm_openfrags_top");
+	
+	RegAdminCmd("sm_openfrags_eligiblity", Command_TestEligibility, ADMFLAG_CONVARS, "Check for if the server is eligible for stat tracking");
+	RegAdminCmd("sm_openfrags_test_query", Command_TestIncrementField, ADMFLAG_CONVARS, "Run a test query to see if the plugin works. Should only be ran by a user and not the server!");
 
 	SQL_TConnect(Callback_DatabaseConnected, "openfrags");
 	
@@ -926,6 +929,95 @@ Action Command_AboutPlugin(int iClient, int iArgs) {
 		CRemoveTags(szAbout, 256);
 		PrintToServer(szAbout);
 	}
+	return Plugin_Handled;
+}
+
+Action Command_TestEligibility(int iClient, int iArgs) {
+	int iBotCount = GetConVarInt(FindConVar("tf_bot_quota"));
+	int iMutator = GetConVarInt(FindConVar("of_mutator"));
+	bool bEnoughPlayers = GetClientCount(true) - iBotCount >= 2;
+	bool bBotCount = iBotCount <= 3
+	bool bMutator = iMutator == OFMutator_None ||
+					iMutator == OFMutator_Arsenal ||
+					iMutator == OFMutator_ClanArena;
+	bool bCheats = !GetConVarBool(FindConVar("sv_cheats"));
+	
+	if(!bEnoughPlayers) {
+		ReplyToCommand(iClient, "[OF] You don't have enough players on your server (you have %i, the requirement is %i or more)", GetClientCount(true) - iBotCount, 2);
+	}
+	
+	if(!bBotCount) {
+		ReplyToCommand(iClient, "[OF] You have a high tf_bot_quota on your server, the max accepted is %i (yours is %i))", 3, iBotCount);
+	}
+	if(!bMutator) {
+		ReplyToCommand(iClient, "[OF] You have an unacceptable mutator enabled (%i)", iMutator);
+	}
+	
+	if(!bCheats) {
+		ReplyToCommand(iClient, "[OF] You have sv_cheats enabled on your server");
+	}
+	
+	if(bEnoughPlayers && bBotCount && bMutator && bCheats) {
+		ReplyToCommand(iClient, "[OF] Your server is eligible for stat tracking!");
+	}
+		
+	return Plugin_Handled;
+}
+
+Action Command_TestIncrementField(int iClient, int iArgs) {
+	ReplyToCommand(iClient, "[OF] Testing IncrementField 0/7");
+	
+	bool bThreadedQuery = true;
+	if(iArgs > 0) {
+		if (GetCmdArgInt(0) == 2)
+			bThreadedQuery = false;
+	}
+	ReplyToCommand(iClient, "[OF] Checking for client validity (Client: %i)", iClient);
+	if(iClient <= 0 || iClient >= MAXPLAYERS)
+		return Plugin_Handled;
+	
+	ReplyToCommand(iClient, "[OF] Checking for if client's data is initialized");
+	
+	if(!g_abInitializedClients[iClient])
+		return Plugin_Handled;
+		
+	ReplyToCommand(iClient, "[OF] Checking server for eligibility");
+		
+	if(!IsServerEligibleForStats())
+		return Plugin_Handled;
+		
+	ReplyToCommand(iClient, "[OF] Getting client SteamID2");
+	
+	char szAuth[32];
+	GetClientAuthId(iClient, AuthId_Steam2, szAuth, 32);
+	
+	ReplyToCommand(iClient, "[OF] Making query");
+	
+	char szField[64];
+	strcopy(szField, 64, "damage_dealt");
+	int iAdd = 1;
+	char szQuery[700];
+	Format(szQuery, 700, "UPDATE stats SET \
+										%s = (%s + %i), \
+										railgun_headshotrate = (railgun_headshots / (CASE WHEN railgun_headshots + railgun_bodyshots + railgun_misses = 0 THEN 1 ELSE railgun_headshots + railgun_bodyshots + railgun_misses END)), \
+										kdr = (frags / (CASE WHEN deaths = 0 THEN 1 ELSE deaths END)), \
+										winrate = (wins / (CASE WHEN matches = 0 THEN 1 ELSE matches END)) \
+										WHERE steamid2 = '%s'", szField, szField, iAdd, szAuth);
+										
+	ReplyToCommand(iClient, "[OF] Sending query to MySQL server");
+	
+	if(bThreadedQuery)
+		g_hSQL.Query(Callback_None, szQuery, 0, DBPrio_Low);
+	else {
+		if(!SQL_FastQuery(g_hSQL, szQuery)) {
+			char szErr[256];
+			SQL_GetError(g_hSQL, szErr, 256);
+			ReplyToCommand(iClient, "[OF] An error occured while sending the query: %s", szErr);
+			return Plugin_Handled;
+		}
+	}
+	
+	ReplyToCommand(iClient, "[OF] TestingIncrementField Done!");
 	return Plugin_Handled;
 }
 	
