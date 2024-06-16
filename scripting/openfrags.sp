@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "1.2d"
+#define PLUGIN_VERSION "1.2e"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/main/updatefile.txt"
 #define MIN_HEADSHOTS_LEADERBOARD 15
 #define MAX_LEADERBOARD_NAME_LENGTH 32
@@ -39,7 +39,7 @@ public Plugin myinfo = {
 	author = "ratest & Oha",
 	description = "Keeps track of your stats!",
 	version = PLUGIN_VERSION,
-	url = "http://openfrags.ohaa.xyz"
+	url = "https://openfrags.ohaa.xyz"
 };
 
 public void OnPluginStart() {
@@ -283,9 +283,14 @@ void Callback_InitPlayerData_Final(Database hSQL, DBResultSet hResults, const ch
 	char szAuth[32];
 	GetClientAuthId(iClient, AuthId_Steam2, szAuth, 32);
 	
+	char szClientName[64];
+	char szClientNameSafe[129];
+	GetClientName(iClient, szClientName, 64);
+	SQL_EscapeString(g_hSQL, szClientName, szClientNameSafe, 64);
+	
 	int iPlayerColor = GetPlayerColor(iClient);
 	char szQueryUpdatePlayer[256];
-	Format(szQueryUpdatePlayer, 256, "UPDATE stats SET color = %i, join_count = join_count + 1 WHERE steamid2 = '%s'", iPlayerColor, szAuth);
+	Format(szQueryUpdatePlayer, 256, "UPDATE stats SET name = '%s', color = %i, join_count = join_count + 1 WHERE steamid2 = '%s'", szClientNameSafe, iPlayerColor, szAuth);
 	g_hSQL.Query(Callback_None, szQueryUpdatePlayer, 5, DBPrio_Low);
 	
 	OnClientDataInitialized(iClient);

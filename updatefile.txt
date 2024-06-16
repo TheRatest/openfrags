@@ -4,14 +4,12 @@
 	{
 		"Version"
 		{
-			"Latest"	"1.2d"
-			"Previous"	"1.2c"
+			"Latest"	"1.2e"
+			"Previous"	"1.2d"
 		}
 		
 		"Notes"	"More info @ openfrags.ohaa.xyz"
-		"Notes"	"more tools for troubleshooting"
-		"Notes"	"fixed the typo in a test command"
-		"Notes"	"the bots dont count toward the player count bug fixed"
+		"Notes"	"player name should get updated whenever they join a server now"
 	}
 	
 	"Files"
