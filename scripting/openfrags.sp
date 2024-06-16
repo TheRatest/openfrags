@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "1.2c"
+#define PLUGIN_VERSION "1.2d"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/main/updatefile.txt"
 #define MIN_HEADSHOTS_LEADERBOARD 15
 #define MAX_LEADERBOARD_NAME_LENGTH 32
@@ -50,7 +50,7 @@ public void OnPluginStart() {
 	RegConsoleCmd("sm_openfrags_top", Command_ViewTop, "View the top players");
 	RegConsoleCmd("sm_openfrags_leaderboard", Command_ViewTop, "Alias for sm_openfrags_top");
 	
-	RegAdminCmd("sm_openfrags_eligiblity", Command_TestEligibility, ADMFLAG_CONVARS, "Check for if the server is eligible for stat tracking");
+	RegAdminCmd("sm_openfrags_eligibility", Command_TestEligibility, ADMFLAG_CONVARS, "Check for if the server is eligible for stat tracking");
 	RegAdminCmd("sm_openfrags_test_query", Command_TestIncrementField, ADMFLAG_CONVARS, "Run a test query to see if the plugin works. Should only be ran by a user and not the server!");
 
 	SQL_TConnect(Callback_DatabaseConnected, "openfrags");
@@ -132,7 +132,7 @@ void Callback_ConnectionCheck(Handle hSQL, Handle hResults, const char[] szErr, 
 bool IsServerEligibleForStats() {
 	int iBotCount = GetConVarInt(FindConVar("tf_bot_quota"));
 	int iMutator = GetConVarInt(FindConVar("of_mutator"));
-	return (GetClientCount(true) - iBotCount >= 2 &&
+	return (GetClientCount(true) >= 2 &&
 			iBotCount <= 3 &&
 			(iMutator == OFMutator_None ||
 			iMutator == OFMutator_Arsenal ||
@@ -935,7 +935,7 @@ Action Command_AboutPlugin(int iClient, int iArgs) {
 Action Command_TestEligibility(int iClient, int iArgs) {
 	int iBotCount = GetConVarInt(FindConVar("tf_bot_quota"));
 	int iMutator = GetConVarInt(FindConVar("of_mutator"));
-	bool bEnoughPlayers = GetClientCount(true) - iBotCount >= 2;
+	bool bEnoughPlayers = GetClientCount(true) >= 2;
 	bool bBotCount = iBotCount <= 3
 	bool bMutator = iMutator == OFMutator_None ||
 					iMutator == OFMutator_Arsenal ||
