@@ -10,7 +10,7 @@
 		
 		"Notes"	"More info @ openfrags.ohaa.xyz"
 		"Notes"	"now tracks dominations and perfects"
-		"Notes"	"changed the server eligiblity requirements, now your server can have an unlimited amount of bots but must have at least 3 players"
+		"Notes"	"changed the server eligiblity requirements, now your server can have an unlimited amount of bots but must have at least 2 players"
 	}
 	
 	"Files"
