@@ -7,7 +7,9 @@ More info at http://openfrags.ohaa.xyz
 sm_openfrags - About OpenFrags
 sm_openfrags_stats [Name/SteamID2] - View your stats (or someone else's)
 sm_openfrags_top - View the top players
-sm_openfrags_leaderboard  An alias for sm_openfrags_top
+sm_openfrags_leaderboard - An alias for sm_openfrags_top
+sm_openfrags_eligibility (admin only) - Test the server for stat tracking eligibility
+sm_openfrags_test_query (admin only) - Increase the caller's damage_dealt stat by 1
 ```
 
 #### Chat commands:

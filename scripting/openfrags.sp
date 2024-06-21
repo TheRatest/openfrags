@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "1.2e"
+#define PLUGIN_VERSION "1.3"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/main/updatefile.txt"
 #define MIN_HEADSHOTS_LEADERBOARD 15
 #define MAX_LEADERBOARD_NAME_LENGTH 32
@@ -29,6 +29,7 @@ bool g_bFirstConnectionEstabilished = false;
 bool g_bThrewErrorAlready = false;
 bool g_abInitializedClients[MAXPLAYERS];
 int g_aiKillstreaks[MAXPLAYERS];
+bool g_abPlayerDied[MAXPLAYERS];
 int g_aiPlayerJoinTimes[MAXPLAYERS];
 
 // for weapons like the ssg which can trigger multiple misses on 1 attack
@@ -92,6 +93,7 @@ void Callback_DatabaseConnected(Handle hDriver, Database hSQL, const char[] szEr
 			HookEvent("player_death", Event_PlayerDeath);
 			HookEvent("teamplay_round_start", Event_RoundStart);
 			HookEvent("teamplay_win_panel", Event_RoundEnd);
+			HookEvent("player_domination", Event_PlayerDomination);
 			
 			g_bFirstConnectionEstabilished = true;
 		}
@@ -130,10 +132,8 @@ void Callback_ConnectionCheck(Handle hSQL, Handle hResults, const char[] szErr, 
 }
 
 bool IsServerEligibleForStats() {
-	int iBotCount = GetConVarInt(FindConVar("tf_bot_quota"));
 	int iMutator = GetConVarInt(FindConVar("of_mutator"));
-	return (GetClientCount(true) >= 2 &&
-			iBotCount <= 3 &&
+	return (GetClientCount(true) >= 3 &&
 			(iMutator == OFMutator_None ||
 			iMutator == OFMutator_Arsenal ||
 			iMutator == OFMutator_ClanArena) &&
@@ -250,14 +250,16 @@ void InitPlayerData(int iClient) {
 												highest_killstreak_map,\
 												damage_dealt,\
 												damage_taken,\
-												score\
+												score,\
+												dominations,\
+												perfects\
 												)\
 												VALUES (\
 												'%s',\
 												'%s',\
 												0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,\
 												'None',\
-												0, 0, 0\
+												0, 0, 0, 0, 0x \
 												);", szAuth, szClientNameSafe);
 	g_hSQL.Query(Callback_None, szQueryInsertNewPlayer, 4, DBPrio_High);
 	
@@ -398,11 +400,15 @@ public void OnClientDisconnect(int iClient) {
 public void OnMapStart() {
 	for(int i = 0; i < MAXPLAYERS; ++i) {
 		g_aiKillstreaks[i] = 0;
+		g_abPlayerDied[i] = false;
 	}
 }
 
 public void OnMapEnd() {
 	for(int i = 1; i < MAXPLAYERS; ++i) {
+		if(!IsClientInGame(i))
+			continue;
+		
 		IncrementField(i, "playtime", g_aiPlayerJoinTimes[i] == 0 ? 0 : GetTime() - g_aiPlayerJoinTimes[i]);
 		g_aiPlayerJoinTimes[i] = GetTime();
 	}
@@ -411,6 +417,7 @@ public void OnMapEnd() {
 void Event_RoundStart(Event event, char[] szEventName, bool bDontBroadcast) {
 	for(int i = 0; i < MAXPLAYERS; ++i) {
 		g_aiKillstreaks[i] = 0;
+		g_abPlayerDied[i] = false;
 		if(i == 0)
 			continue;
 		
@@ -419,7 +426,7 @@ void Event_RoundStart(Event event, char[] szEventName, bool bDontBroadcast) {
 	}
 }
 
-void Event_PlayerHurt(Event event, const char[] szEvName, bool bDontBroadcast) {
+void Event_PlayerHurt(Event event, const char[] szEventName, bool bDontBroadcast) {
 	int iAttacker = GetClientOfUserId(GetEventInt(event, "attacker"));
 	int iVictim = GetClientOfUserId(GetEventInt(event, "userid"));
 
@@ -433,6 +440,10 @@ void Event_PlayerHurt(Event event, const char[] szEvName, bool bDontBroadcast) {
 		return;
 	
 	IncrementField(iAttacker, "damage_dealt", GetEventInt(event, "damageamount"));
+}
+
+void Event_PlayerDomination(Event event, const char[] szEventName, bool bDontBroadcast) {
+	IncrementField(GetClientOfUserId(GetEventInt(event, "dominator")), "dominations"); 
 }
 
 public Action TF2_CalcIsAttackCritical(int iClient, int iWeapon, char[] szWeapon, bool& bResult) {
@@ -504,6 +515,7 @@ void Event_PlayerDeath(Event event, const char[] szEventName, bool bDontBroadcas
 	
 	IncrementField(iVictim, "deaths");
 	ResetKillstreak(iVictim);
+	g_abPlayerDied[iVictim] = true;
 	if(iVictim != iClient) {
 		IncrementField(iClient, "frags");
 		if(StrEqual(szWeapon, "crowbar", false) || StrEqual(szWeapon, "lead_pipe", false) || StrEqual(szWeapon, "combatknife", false) || StrEqual(szWeapon, "claws", false))
@@ -571,6 +583,10 @@ void Event_RoundEnd(Event event, const char[] szEventName, bool bDontBroadcast) 
 	IncrementField(iTop1Client, "top3_wins");
 	IncrementField(iTop2Client, "top3_wins");
 	IncrementField(iTop3Client, "top3_wins");
+
+	if(!g_abPlayerDied[iTop1Client]) {
+		IncrementField(iTop1Client, "perfects");
+	}
 }
 
 void PrintPlayerStats(int iClient, int iStatsOwner, char[] szAuthArg = "") {

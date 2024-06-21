@@ -4,12 +4,13 @@
 	{
 		"Version"
 		{
-			"Latest"	"1.2e"
-			"Previous"	"1.2d"
+			"Latest"	"3"
+			"Previous"	"1.2e"
 		}
 		
 		"Notes"	"More info @ openfrags.ohaa.xyz"
-		"Notes"	"player name should get updated whenever they join a server now"
+		"Notes"	"now tracks dominations and perfects"
+		"Notes"	"changed the server eligiblity requirements, now your server can have an unlimited amount of bots but must have at least 3 players"
 	}
 	
 	"Files"
