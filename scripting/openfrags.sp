@@ -133,7 +133,7 @@ void Callback_ConnectionCheck(Handle hSQL, Handle hResults, const char[] szErr, 
 
 bool IsServerEligibleForStats() {
 	int iMutator = GetConVarInt(FindConVar("of_mutator"));
-	return (GetClientCount(true) >= 3 &&
+	return (GetClientCount(true) >= 2 &&
 			(iMutator == OFMutator_None ||
 			iMutator == OFMutator_Arsenal ||
 			iMutator == OFMutator_ClanArena) &&
