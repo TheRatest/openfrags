@@ -4,13 +4,12 @@
 	{
 		"Version"
 		{
-			"Latest"	"1.3"
-			"Previous"	"1.2e"
+			"Latest"	"1.3a"
+			"Previous"	"1.3"
 		}
 		
 		"Notes"	"More info @ openfrags.ohaa.xyz"
-		"Notes"	"now tracks dominations and perfects"
-		"Notes"	"changed the server eligiblity requirements, now your server can have an unlimited amount of bots but must have at least 2 players"
+		"Notes"	"bugfixes"
 	}
 	
 	"Files"

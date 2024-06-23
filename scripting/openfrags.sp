@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "1.3"
+#define PLUGIN_VERSION "1.3a"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/main/updatefile.txt"
 #define MIN_HEADSHOTS_LEADERBOARD 15
 #define MAX_LEADERBOARD_NAME_LENGTH 32
@@ -93,7 +93,6 @@ void Callback_DatabaseConnected(Handle hDriver, Database hSQL, const char[] szEr
 			HookEvent("player_death", Event_PlayerDeath);
 			HookEvent("teamplay_round_start", Event_RoundStart);
 			HookEvent("teamplay_win_panel", Event_RoundEnd);
-			HookEvent("player_domination", Event_PlayerDomination);
 			
 			g_bFirstConnectionEstabilished = true;
 		}
@@ -259,7 +258,7 @@ void InitPlayerData(int iClient) {
 												'%s',\
 												0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,\
 												'None',\
-												0, 0, 0, 0, 0x \
+												0, 0, 0, 0, 0\
 												);", szAuth, szClientNameSafe);
 	g_hSQL.Query(Callback_None, szQueryInsertNewPlayer, 4, DBPrio_High);
 	
@@ -442,10 +441,6 @@ void Event_PlayerHurt(Event event, const char[] szEventName, bool bDontBroadcast
 	IncrementField(iAttacker, "damage_dealt", GetEventInt(event, "damageamount"));
 }
 
-void Event_PlayerDomination(Event event, const char[] szEventName, bool bDontBroadcast) {
-	IncrementField(GetClientOfUserId(GetEventInt(event, "dominator")), "dominations"); 
-}
-
 public Action TF2_CalcIsAttackCritical(int iClient, int iWeapon, char[] szWeapon, bool& bResult) {
 	if(StrEqual(szWeapon, "tf_weapon_railgun", false) || StrEqual(szWeapon, "railgun", false)) {
 		IncrementField(iClient, "railgun_misses", 1);
@@ -503,6 +498,7 @@ Action Timer_ResetHitDebounce(Handle hTimer, int iClient) {
 void Event_PlayerDeath(Event event, const char[] szEventName, bool bDontBroadcast) {
 	int iVictimId = GetEventInt(event, "userid");
 	int iAttackerId = GetEventInt(event, "attacker");
+	bool bDominated = view_as<bool>(GetEventInt(event, "dominated"));
 	
 	int iVictim = GetClientOfUserId(iVictimId);
 	int iClient = GetClientOfUserId(iAttackerId);
@@ -518,6 +514,10 @@ void Event_PlayerDeath(Event event, const char[] szEventName, bool bDontBroadcas
 	g_abPlayerDied[iVictim] = true;
 	if(iVictim != iClient) {
 		IncrementField(iClient, "frags");
+		
+		if(bDominated)
+			IncrementField(iClient, "dominations");
+		
 		if(StrEqual(szWeapon, "crowbar", false) || StrEqual(szWeapon, "lead_pipe", false) || StrEqual(szWeapon, "combatknife", false) || StrEqual(szWeapon, "claws", false))
 			IncrementField(iClient, "melee_kills");
 		
