@@ -4,12 +4,15 @@
 	{
 		"Version"
 		{
-			"Latest"	"1.3a"
-			"Previous"	"1.3"
+			"Latest"	"1.4"
+			"Previous"	"1.3a"
 		}
 		
 		"Notes"	"More info @ openfrags.ohaa.xyz"
-		"Notes"	"bugfixes"
+		"Notes"	"Rating!"
+		"Notes"	"Restructured !top"
+		"Notes"	"Less hungry on the bandwidth"
+		"Notes"	"Mutator enum fix"
 	}
 	
 	"Files"
@@ -17,6 +20,7 @@
 		"Patch"
 		{
 			"Plugin"	"Path_SM/plugins/openfrags.smx"
+			"Plugin"	"Path_SM/translations/openfrags.phrases.txt"
 			
 			"Source"	"Path_SM/scripting/myplugin.sp"
 		}

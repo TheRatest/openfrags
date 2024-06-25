@@ -12,12 +12,16 @@
 	"OpenFrags YourStats"
 	{
 		"#format"		"{1:s}"
-		"en"			"Your stats: (more at openfrags.ohaa.xyz/u/{1})"
+		"en"			"Your stats: (of.ohaa.xyz/u/{1})"
 	}
 	"OpenFrags PlayerStats"
 	{
 		"#format"		"{1:s},{2:s},{3:s}"
 		"en"			"{2}{1}{default}'s stats: (more at openfrags.ohaa.xyz/u/{3})"
+	}
+	"OpenFrags StatsError"
+	{
+		"en"			"There was an error while getting the stats. Try another time!"
 	}
 	"OpenFrags UninitializedSelf"
 	{
@@ -73,9 +77,14 @@
 		"#format"		"{1:i},{2:i}"
 		"en"			"Damage dealt/taken: {1}/{2}"
 	}
+	"OpenFrags StatsRating"
+	{
+		"#format"		"{1:i},{2:i},{3:s}"
+		"en"			"Rating {3}[#{2}]{default}: {1}"
+	}
 	"OpenFrags TopPlayers"
 	{
-		"en"			"Top players: (more at openfrags.ohaa.xyz/top)"
+		"en"			"Top players: (of.ohaa.xyz/top)"
 	}
 	"OpenFrags TopFragger"
 	{
@@ -110,6 +119,16 @@
 	"OpenFrags TopWinnerRate"
 	{
 		"#format"		"{1:s},{2:s},{3:i},{4:i},{5:i}"
-		"en"			"{default}Highest winrate: {2}{1} {default}- {3}.{4}%% ({5} total wins)"
+		"en"			"{default}Highest Winrate: {2}{1} {default}- {3}.{4}%% ({5} total wins)"
+	}
+	"OpenFrags TopRating"
+	{
+		"#format"		"{1:s},{2:s},{3:i}"
+		"en"			"{default}Highest Rating: {2}{1} {default}- {3}"
+	}
+	"OpenFrags TopPlaytime"
+	{
+		"#format"		"{1:s},{2:s},{3:i},{4:i}"
+		"en"			"{default}Highest Playtime: {2}{1} {default}- {3}.{4} hours"
 	}
 }
