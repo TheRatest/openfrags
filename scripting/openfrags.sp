@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "1.4"
+#define PLUGIN_VERSION "1.4a"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/main/updatefile.txt"
 #define MIN_LEADERBOARD_HEADSHOTS 15
 #define MIN_LEADERBOARD_MATCHES 3
@@ -38,6 +38,9 @@ bool g_abPlayerDied[MAXPLAYERS];
 int g_aiPlayerJoinTimes[MAXPLAYERS];
 int g_aiPlayerDamageDealtStore[MAXPLAYERS];
 int g_aiPlayerDamageTakenStore[MAXPLAYERS];
+bool g_abPlayerJoinedBeforeHalfway[MAXPLAYERS];
+bool g_bRoundGoing = true;
+bool g_bSvTagsChangedDebounce = false;
 
 // for weapons like the ssg which can trigger multiple misses on 1 attack
 bool g_abSSGHitDebounce[MAXPLAYERS];
@@ -52,12 +55,13 @@ public Plugin myinfo = {
 
 public void OnPluginStart() {
 	LoadTranslations("openfrags.phrases.txt");
-
+	
 	RegConsoleCmd("sm_openfrags", Command_AboutPlugin, "Information on OpenFrags");
 	RegConsoleCmd("sm_openfrags_stats", Command_ViewStats, "View your stats (or someone else's)");
 	RegConsoleCmd("sm_openfrags_top", Command_ViewTop, "View the top players");
 	RegConsoleCmd("sm_openfrags_leaderboard", Command_ViewTop, "Alias for sm_openfrags_top");
 	
+	RegAdminCmd("sm_openfrags_myscore", Command_MyScore, ADMFLAG_CHAT, "Print your current score/frags");
 	RegAdminCmd("sm_openfrags_eligibility", Command_TestEligibility, ADMFLAG_CONVARS, "Check for if the server is eligible for stat tracking");
 	RegAdminCmd("sm_openfrags_test_query", Command_TestIncrementField, ADMFLAG_CONVARS, "Run a test query to see if the plugin works. Should only be ran by a user and not the server!");
 
@@ -65,6 +69,7 @@ public void OnPluginStart() {
 	
 	CreateTimer(60.0, Loop_ConnectionCheck);
 	AddServerTagRat("openfrags");
+	FindConVar("sv_tags").AddChangeHook(Event_SvTagsChanged);
 	
 	if(LibraryExists("updater")) {
 		Updater_AddPlugin(UPDATE_URL);
@@ -140,11 +145,17 @@ void Callback_ConnectionCheck(Handle hSQL, Handle hResults, const char[] szErr, 
 }
 
 bool IsServerEligibleForStats() {
-	int iMutator = GetConVarInt(FindConVar("of_mutator"));
+	int nMutator = GetConVarInt(FindConVar("of_mutator"));
+	
+	bool bMutator = nMutator == OFMutator_None ||
+					nMutator == OFMutator_Arsenal ||
+					nMutator == OFMutator_ClanArena;
+	bool bWaitingForPlayers = view_as<bool>(GameRules_GetProp("m_bInWaitingForPlayers"));
+	
 	return (GetClientCount(true) >= 2 &&
-			(iMutator == OFMutator_None ||
-			iMutator == OFMutator_Arsenal ||
-			iMutator == OFMutator_ClanArena) &&
+			g_bRoundGoing &&
+			!bWaitingForPlayers &&
+			bMutator &&
 			!GetConVarBool(FindConVar("sv_cheats")));
 }
 
@@ -203,9 +214,36 @@ void ColorIntToHex(int iColor, char[] szColor, int iMaxLen = 10) {
 	Format(szColor, iMaxLen, "%s%s%s%s", "\x07", szRed, szGreen, szBlue);
 }
 
-stock int GetPlayerFrags(int iClient) {
+int GetPlayerFrags(int iClient) {
 	int iFrags = GetEntProp(GetPlayerResourceEntity(), Prop_Send, "m_iScore", 4, iClient);
 	return iFrags;
+}
+
+bool IsRoundHalfwayDone() {
+	int iFragLimit = GetConVarInt(FindConVar("mp_fraglimit"));
+	int iTimeLimitMinutes = GetConVarInt(FindConVar("mp_timelimit"));
+	int iTimePassed = GameRules_GetProp("m_iRoundTime");
+	int iFragsHitMax = 0;
+	for(int i = 1; i < MaxClients; ++i) {
+		if(!IsClientInGame(i))
+			continue;
+		
+		int iFrags = GetPlayerFrags(i);
+		if(iFrags > iFragsHitMax)
+			iFragsHitMax = iFrags;
+		
+		if(iFrags >= iFragLimit/2)
+			break;
+	}
+	
+	return ((iTimePassed / 60 >= iTimeLimitMinutes / 2) || (iFragsHitMax >= iFragLimit / 2));
+}
+
+bool IsPlayerActive(int iClient) {
+	if(view_as<TFTeam>(GetClientTeam(iClient)) == TFTeam_Unassigned)
+		return false;
+	
+	return ((GetPlayerFrags(iClient) > 0 || g_aiPlayerDamageDealtStore[iClient] > 0) && view_as<TFTeam>(GetClientTeam(iClient)) != TFTeam_Spectator);
 }
 
 void InitPlayerData(int iClient) {
@@ -365,6 +403,7 @@ public void OnPluginEnd() {
 public void OnClientAuthorized(int iClient, const char[] szAuth) {
 	g_aiPlayerJoinTimes[iClient] = GetTime();
 	g_aiKillstreaks[iClient] = 0;
+	g_abPlayerJoinedBeforeHalfway[iClient] = IsRoundHalfwayDone();
 	
 	InitPlayerData(iClient);
 }
@@ -378,8 +417,9 @@ void OnClientDataInitialized(int iClient) {
 				
 			if(!g_abInitializedClients[i])
 				continue;
-	
-			IncrementField(i, "playtime", g_aiPlayerJoinTimes[i] == 0 ? 0 : GetTime() - g_aiPlayerJoinTimes[i]);
+			
+			if(IsPlayerActive(i))
+				IncrementField(i, "playtime", g_aiPlayerJoinTimes[i] == 0 ? 0 : GetTime() - g_aiPlayerJoinTimes[i]);
 			g_aiPlayerJoinTimes[i] = GetTime();
 		}
 	} else {
@@ -397,13 +437,19 @@ public void OnClientPutInServer(int iClient) {
 }
 
 public void OnClientDisconnect(int iClient) {
+	if(g_abPlayerJoinedBeforeHalfway[iClient] && IsRoundHalfwayDone())
+		IncrementField(iClient, "matches");
+	
 	ResetKillstreak(iClient);
 	UpdateStoredStats(iClient);
 	g_abInitializedClients[iClient] = false;
 	g_aiPlayerJoinTimes[iClient] = 0;
+	g_abPlayerJoinedBeforeHalfway[iClient] = false;
 }
 
 public void OnMapStart() {
+	AddServerTagRat("openfrags");
+	g_bRoundGoing = true;
 	for(int i = 0; i < MAXPLAYERS; ++i) {
 		g_aiKillstreaks[i] = 0;
 		g_abPlayerDied[i] = false;
@@ -411,13 +457,19 @@ public void OnMapStart() {
 }
 
 public void OnMapEnd() {
+	for(int i = 0; i < MAXPLAYERS; ++i) {
+		g_abPlayerJoinedBeforeHalfway[i] = false;
+	}
 	UpdateStoredStats();
 }
 
 void Event_RoundStart(Event event, char[] szEventName, bool bDontBroadcast) {
+	g_bRoundGoing = true;
 	for(int i = 0; i < MAXPLAYERS; ++i) {
 		g_aiKillstreaks[i] = 0;
 		g_abPlayerDied[i] = false;
+		if(i < MaxClients)
+			g_abPlayerJoinedBeforeHalfway[i] = true;
 	}
 
 	UpdateStoredStats();
@@ -438,10 +490,13 @@ void UpdateStoredStats(int iClient = -1) {
 		if(!IsClientInGame(iClient))
 			return;
 		
-		IncrementField(iClient, "playtime", g_aiPlayerJoinTimes[iClient] == 0 ? 0 : GetTime() - g_aiPlayerJoinTimes[iClient]);
+		if(IsServerEligibleForStats() && IsPlayerActive(iClient)) {
+			IncrementField(iClient, "playtime", g_aiPlayerJoinTimes[iClient] == 0 ? 0 : GetTime() - g_aiPlayerJoinTimes[iClient]);
+			IncrementField(iClient, "damage_dealt", g_aiPlayerDamageDealtStore[iClient]);
+			IncrementField(iClient, "damage_taken", g_aiPlayerDamageTakenStore[iClient]);
+		}
+		
 		g_aiPlayerJoinTimes[iClient] = GetTime();
-		IncrementField(iClient, "damage_dealt", g_aiPlayerDamageDealtStore[iClient]);
-		IncrementField(iClient, "damage_taken", g_aiPlayerDamageTakenStore[iClient]);
 		g_aiPlayerDamageDealtStore[iClient] = 0;
 		g_aiPlayerDamageTakenStore[iClient] = 0;
 		
@@ -460,11 +515,13 @@ void UpdateStoredStats(int iClient = -1) {
 		char szUpdateScoreQuery[512];
 		Format(szUpdateScoreQuery, 512, "UPDATE stats SET \
 													score = greatest(1000 \
-															+ ((highest_killstreak-5)/5)+pow(greatest(highest_killstreak-3, 0)/8, 2) * 8 \
-															+ pow(winrate * pow(kdr, 2) * 60 * pow(frags/(playtime+1), 2), 1/4) * 1000 \
+															+ 8 * ((highest_killstreak-5)/5)+pow(greatest(highest_killstreak-3, 0)/8, 2) \
+															+ 250 * pow(winrate * pow(kdr, 2) * pow(60*frags/playtime, 5/2), 1/4) \
 															+ pow(frags, 1/3) \
-															- 100*(1-pow(winrate, 1/4))*sqrt(1/(CASE WHEN kdr = 0 THEN 0.1 ELSE sqrt(kdr) END))*5, 1) \
-													WHERE steamid2='%s' AND frags > 3 AND highest_killstreak > 1;", szAuth)
+															+ 200 * least(2*(railgun_headshotrate*58/25-0.08), 1) \
+															- 100 * ((1-pow(winrate, 1/4))/kdr*5-0.65) \
+															, 1) \
+													WHERE steamid2='%s' AND frags>=100 AND highest_killstreak>=1 AND kdr>0 AND playtime>=3600 AND matches>=2;", szAuth)
 		
 		g_hSQL.Query(Callback_None, szUpdateScoreQuery, 421, DBPrio_Low);
 	}
@@ -614,7 +671,7 @@ void Event_RoundEnd(Event event, const char[] szEventName, bool bDontBroadcast) 
 		if(!g_abInitializedClients[i])
 			continue;
 
-		if(view_as<TFTeam>(GetClientTeam(i)) != TFTeam_Spectator && view_as<TFTeam>(GetClientTeam(i)) != TFTeam_Unassigned)
+		if(g_abPlayerJoinedBeforeHalfway[i] && IsPlayerActive(i))
 			IncrementField(i, "matches");
 		
 		ResetKillstreak(i);
@@ -626,13 +683,22 @@ void Event_RoundEnd(Event event, const char[] szEventName, bool bDontBroadcast) 
 	int iTop3Client = GetEventInt(event, "player_3");
 	
 	IncrementField(iTop1Client, "wins");
+	
 	IncrementField(iTop1Client, "top3_wins");
 	IncrementField(iTop2Client, "top3_wins");
 	IncrementField(iTop3Client, "top3_wins");
+	
+	if(!g_abPlayerJoinedBeforeHalfway[iTop1Client])
+		IncrementField(iTop1Client, "matches");
+	if(!g_abPlayerJoinedBeforeHalfway[iTop2Client])
+		IncrementField(iTop2Client, "matches");
+	if(!g_abPlayerJoinedBeforeHalfway[iTop3Client])
+		IncrementField(iTop3Client, "matches");
 
-	if(!g_abPlayerDied[iTop1Client]) {
+	if(!g_abPlayerDied[iTop1Client])
 		IncrementField(iTop1Client, "perfects");
-	}
+	
+	g_bRoundGoing = false;
 }
 
 bool g_bPrintPlayerStatsScrewedUp = false;
@@ -1029,28 +1095,31 @@ Action Command_AboutPlugin(int iClient, int iArgs) {
 }
 
 Action Command_TestEligibility(int iClient, int iArgs) {
-	int iMutator = GetConVarInt(FindConVar("of_mutator"));
+	int nMutator = GetConVarInt(FindConVar("of_mutator"));
 	bool bEnoughPlayers = GetClientCount(true) >= 2;
-	bool bMutator = iMutator == OFMutator_None ||
-					iMutator == OFMutator_Arsenal ||
-					iMutator == OFMutator_ClanArena;
+	bool bMutator = nMutator == OFMutator_None ||
+					nMutator == OFMutator_Arsenal ||
+					nMutator == OFMutator_ClanArena;
 	bool bCheats = !GetConVarBool(FindConVar("sv_cheats"));
+	bool bWaitingForPlayers = view_as<bool>(GameRules_GetProp("m_bInWaitingForPlayers"));
 	
-	if(!bEnoughPlayers) {
+	if(!bEnoughPlayers)
 		ReplyToCommand(iClient, "[OF] You don't have enough players on your server (you have %i, the requirement is %i or more)", GetClientCount(true), 2);
-	}
+	
+	if(bWaitingForPlayers)
+		ReplyToCommand(iClient, "[OF] The round hasn't yet started");
+		
+	if(!g_bRoundGoing)
+		ReplyToCommand(iClient, "[OF] The round has already ended");
 
-	if(!bMutator) {
-		ReplyToCommand(iClient, "[OF] You have an unacceptable mutator enabled (%i)", iMutator);
-	}
+	if(!bMutator)
+		ReplyToCommand(iClient, "[OF] You have an unacceptable mutator enabled (%i)", nMutator);
 	
-	if(!bCheats) {
+	if(!bCheats)
 		ReplyToCommand(iClient, "[OF] You have sv_cheats enabled on your server");
-	}
 	
-	if(bEnoughPlayers && bMutator && bCheats) {
+	if(bEnoughPlayers && bMutator && bCheats && !bWaitingForPlayers && g_bRoundGoing)
 		ReplyToCommand(iClient, "[OF] Your server is eligible for stat tracking!");
-	}
 		
 	return Plugin_Handled;
 }
@@ -1106,6 +1175,30 @@ Action Command_TestIncrementField(int iClient, int iArgs) {
 	}
 	
 	ReplyToCommand(iClient, "[OF] TestingIncrementField Done!");
+	return Plugin_Handled;
+}
+
+Action Command_MyScore(int iClient, int iArgs) {
+	if(iClient <= 0) {
+		ReplyToCommand(iClient, "[OF] This command cannot be ran as the server");
+		return Plugin_Handled;
+	}
+	
+	ReplyToCommand(iClient, "[OF] Your score: %i", GetPlayerFrags(iClient));
+	return Plugin_Handled;
+}
+
+void Event_SvTagsChanged(ConVar cvarTags, const char[] szOld, const char[] szNew) {
+	if(g_bSvTagsChangedDebounce)
+		return;
+	
+	g_bSvTagsChangedDebounce = true;
+	CreateTimer(0.5, Delayed_SvTagsChangedDebounce);
+	AddServerTagRat("openfrags");
+}
+
+Action Delayed_SvTagsChangedDebounce(Handle hTimer) {
+	g_bSvTagsChangedDebounce = false;
 	return Plugin_Handled;
 }
 	
