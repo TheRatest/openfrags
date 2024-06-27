@@ -26,7 +26,7 @@ Without access to the DB you won't be able to use the plugin on your server
 0. Requirements:
 - [SM-OpenFortress-Tools](https://github.com/openfortress/SM-Open-Fortress-Tools)
 - [Updater](https://forums.alliedmods.net/showthread.php?t=169095)  
-- [Sockets extension](https://code.google.com/archive/p/sourcemod-curl-extension/downloads) (need it for Updater)  
+- [cURL Extension](https://code.google.com/archive/p/sourcemod-curl-extension/downloads) (need it for Updater)  
 - [morecolors.inc](https://forums.alliedmods.net/showthread.php?t=185016)  
 1. Download the files from the repo and unpack them in open_fortress/addons/sourcemod/
 2. Configure the translation file (open_fortress/addons/sourcemod/translations/openfrags.phrases.txt) to fit your server's theme
