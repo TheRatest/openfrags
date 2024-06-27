@@ -4,16 +4,12 @@
 	{
 		"Version"
 		{
-			"Latest"	"1.4a"
-			"Previous"	"1.4"
+			"Latest"	"1.4b"
+			"Previous"	"1.4a"
 		}
 		
 		"Notes"	"More info @ openfrags.ohaa.xyz"
-		"Notes"	"Rating formula changes"
-		"Notes"	"sv_tags fix"
-		"Notes"	"Playtime and matches now don't count if you're AFK"
-		"Notes"	"Your losses now don't count if you joined halfway into the match"
-		"Notes"	"Disconnects after the halfway point (for people who were in the game since the beginning now count as losses"
+		"Notes"	"Bugfix for IsRoundHalfwayDone()"
 	}
 	
 	"Files"

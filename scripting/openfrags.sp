@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "1.4a"
+#define PLUGIN_VERSION "1.4b"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/main/updatefile.txt"
 #define MIN_LEADERBOARD_HEADSHOTS 15
 #define MIN_LEADERBOARD_MATCHES 3
@@ -40,6 +40,7 @@ int g_aiPlayerDamageDealtStore[MAXPLAYERS];
 int g_aiPlayerDamageTakenStore[MAXPLAYERS];
 bool g_abPlayerJoinedBeforeHalfway[MAXPLAYERS];
 bool g_bRoundGoing = true;
+int g_timeRoundStart = 0;
 bool g_bSvTagsChangedDebounce = false;
 
 // for weapons like the ssg which can trigger multiple misses on 1 attack
@@ -222,7 +223,9 @@ int GetPlayerFrags(int iClient) {
 bool IsRoundHalfwayDone() {
 	int iFragLimit = GetConVarInt(FindConVar("mp_fraglimit"));
 	int iTimeLimitMinutes = GetConVarInt(FindConVar("mp_timelimit"));
-	int iTimePassed = GameRules_GetProp("m_iRoundTime");
+	// screw u rodrigo286 https://forums.alliedmods.net/showthread.php?t=196136
+	// int iTimePassed = GameRules_GetProp("m_iRoundTime");
+	int iTimePassed = GetTime() - g_timeRoundStart;
 	int iFragsHitMax = 0;
 	for(int i = 1; i < MaxClients; ++i) {
 		if(!IsClientInGame(i))
@@ -236,7 +239,10 @@ bool IsRoundHalfwayDone() {
 			break;
 	}
 	
-	return ((iTimePassed / 60 >= iTimeLimitMinutes / 2) || (iFragsHitMax >= iFragLimit / 2));
+	bool bTimeHalfwayDone = (iTimeLimitMinutes > 0) ? (iTimePassed / 60 >= iTimeLimitMinutes / 2) : false;
+	bool bFragsHalfwayDone = (iFragLimit > 0) ? (iFragsHitMax >= iFragLimit / 2) : false;
+	
+	return (bTimeHalfwayDone || bFragsHalfwayDone);
 }
 
 bool IsPlayerActive(int iClient) {
@@ -450,6 +456,7 @@ public void OnClientDisconnect(int iClient) {
 public void OnMapStart() {
 	AddServerTagRat("openfrags");
 	g_bRoundGoing = true;
+	g_timeRoundStart = GetTime();
 	for(int i = 0; i < MAXPLAYERS; ++i) {
 		g_aiKillstreaks[i] = 0;
 		g_abPlayerDied[i] = false;
@@ -465,6 +472,7 @@ public void OnMapEnd() {
 
 void Event_RoundStart(Event event, char[] szEventName, bool bDontBroadcast) {
 	g_bRoundGoing = true;
+	g_timeRoundStart = GetTime();
 	for(int i = 0; i < MAXPLAYERS; ++i) {
 		g_aiKillstreaks[i] = 0;
 		g_abPlayerDied[i] = false;
