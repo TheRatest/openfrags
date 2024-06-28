@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "1.4b"
+#define PLUGIN_VERSION "1.5"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/main/updatefile.txt"
 #define MIN_LEADERBOARD_HEADSHOTS 15
 #define MIN_LEADERBOARD_MATCHES 3
@@ -39,9 +39,11 @@ int g_aiPlayerJoinTimes[MAXPLAYERS];
 int g_aiPlayerDamageDealtStore[MAXPLAYERS];
 int g_aiPlayerDamageTakenStore[MAXPLAYERS];
 bool g_abPlayerJoinedBeforeHalfway[MAXPLAYERS];
+bool g_abPlayerNotifiedOfOF[MAXPLAYERS];
 bool g_bRoundGoing = true;
 int g_timeRoundStart = 0;
 bool g_bSvTagsChangedDebounce = false;
+int g_nCurrentRoundMutator = 0;
 
 // for weapons like the ssg which can trigger multiple misses on 1 attack
 bool g_abSSGHitDebounce[MAXPLAYERS];
@@ -61,9 +63,10 @@ public void OnPluginStart() {
 	RegConsoleCmd("sm_openfrags_stats", Command_ViewStats, "View your stats (or someone else's)");
 	RegConsoleCmd("sm_openfrags_top", Command_ViewTop, "View the top players");
 	RegConsoleCmd("sm_openfrags_leaderboard", Command_ViewTop, "Alias for sm_openfrags_top");
+	RegConsoleCmd("sm_openfrags_optout", Command_OptOut, "Delete all the data stored associated with the caller and permanently opt out of the stat tracking");
+	RegConsoleCmd("sm_openfrags_eligibility", Command_TestEligibility, "Check for if the server is eligible for stat tracking");
 	
 	RegAdminCmd("sm_openfrags_myscore", Command_MyScore, ADMFLAG_CHAT, "Print your current score/frags");
-	RegAdminCmd("sm_openfrags_eligibility", Command_TestEligibility, ADMFLAG_CONVARS, "Check for if the server is eligible for stat tracking");
 	RegAdminCmd("sm_openfrags_test_query", Command_TestIncrementField, ADMFLAG_CONVARS, "Run a test query to see if the plugin works. Should only be ran by a user and not the server!");
 
 	SQL_TConnect(Callback_DatabaseConnected, "openfrags");
@@ -104,6 +107,7 @@ void Callback_DatabaseConnected(Handle hDriver, Database hSQL, const char[] szEr
 
 			g_bFirstConnectionEstabilished = true;
 			
+			HookEvent("player_disconnect", Event_PlayerDisconnect);
 			HookEvent("player_hurt", Event_PlayerHurt);
 			HookEvent("player_death", Event_PlayerDeath);
 			HookEvent("teamplay_round_start", Event_RoundStart);
@@ -145,17 +149,15 @@ void Callback_ConnectionCheck(Handle hSQL, Handle hResults, const char[] szErr, 
 	CreateTimer(60.0, Loop_ConnectionCheck);
 }
 
-bool IsServerEligibleForStats() {
-	int nMutator = GetConVarInt(FindConVar("of_mutator"));
-	
-	bool bMutator = nMutator == OFMutator_None ||
-					nMutator == OFMutator_Arsenal ||
-					nMutator == OFMutator_ClanArena;
+bool IsServerEligibleForStats(bool bIgnoreRoundState = false) {
+	bool bMutator = g_nCurrentRoundMutator == OFMutator_None ||
+					g_nCurrentRoundMutator == OFMutator_Arsenal ||
+					g_nCurrentRoundMutator == OFMutator_ClanArena;
 	bool bWaitingForPlayers = view_as<bool>(GameRules_GetProp("m_bInWaitingForPlayers"));
 	
 	return (GetClientCount(true) >= 2 &&
-			g_bRoundGoing &&
-			!bWaitingForPlayers &&
+			(bIgnoreRoundState ? true : g_bRoundGoing) &&
+			(bIgnoreRoundState ? true : !bWaitingForPlayers) &&
 			bMutator &&
 			!GetConVarBool(FindConVar("sv_cheats")));
 }
@@ -272,7 +274,32 @@ void InitPlayerData(int iClient) {
 	// anyone who has a single quote in their name... i will find and frag
 	char szClientNameSafe[129];
 	SQL_EscapeString(g_hSQL, szClientName, szClientNameSafe, 64);
+	
+	// check for a stat tracking ban / opt-out
+	char szQueryCheckPlayerBan[128];
+	Format(szQueryCheckPlayerBan, 128, "SELECT * FROM bans WHERE steamid2 = '%s'", szAuth);
+	g_hSQL.Query(Callback_InitPlayerData_Check, szQueryCheckPlayerBan, iClient, DBPrio_High);
+}
 
+void Callback_InitPlayerData_Check(Database hSQL, DBResultSet hResults, const char[] szErr, int iClient) {
+	if(hResults.RowCount > 0) {
+		hResults.FetchRow();
+		bool bBanned = view_as<bool>(hResults.FetchInt(2));
+		int iExpirationTime = hResults.FetchInt(5);
+
+		int iCurrentTime = GetTime();
+		if(bBanned && (iCurrentTime < iExpirationTime || iExpirationTime == 0))
+			return;
+	}
+	
+	char szAuth[32];
+	GetClientAuthId(iClient, AuthId_Steam2, szAuth, 32);
+	
+	char szClientName[64];
+	char szClientNameSafe[129];
+	GetClientName(iClient, szClientName, 64);
+	SQL_EscapeString(g_hSQL, szClientName, szClientNameSafe, 64);
+	
 	// won't run if there's an existing entry for the player
 	char szQueryInsertNewPlayer[1024];
 	Format(szQueryInsertNewPlayer, 1024, "INSERT IGNORE INTO stats (steamid2,\
@@ -304,34 +331,21 @@ void InitPlayerData(int iClient) {
 												damage_taken,\
 												score,\
 												dominations,\
-												perfects\
+												perfects,\
+												notified\
 												)\
 												VALUES (\
 												'%s',\
 												'%s',\
 												0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,\
 												'None',\
-												0, 0, 0, 0, 0\
+												0, 0, 0, 0, 0, 0\
 												);", szAuth, szClientNameSafe);
-	g_hSQL.Query(Callback_None, szQueryInsertNewPlayer, 4, DBPrio_High);
-	
-	// check for a stat tracking ban
-	char szQueryCheckPlayerBan[128];
-	Format(szQueryCheckPlayerBan, 128, "SELECT * FROM bans WHERE steamid2 = '%s'", szAuth);
-	g_hSQL.Query(Callback_InitPlayerData_Final, szQueryCheckPlayerBan, iClient, DBPrio_High);
+	g_hSQL.Query(Callback_InitPlayerData_Final, szQueryInsertNewPlayer, iClient, DBPrio_High);
 }
 
-void Callback_InitPlayerData_Final(Database hSQL, DBResultSet hResults, const char[] szErr, any iClient) {
-	if(hResults.RowCount > 0) {
-		hResults.FetchRow();
-		bool bBanned = view_as<bool>(hResults.FetchInt(2));
-		int iExpirationTime = hResults.FetchInt(5);
-		CloseHandle(hResults);
-		int iCurrentTime = GetTime();
-		if(bBanned && iCurrentTime < iExpirationTime)
-			return;
-	}
-	
+void Callback_InitPlayerData_Final(Database hSQL, DBResultSet hResults, const char[] szErr, any iClientUncasted) {
+	int iClient = view_as<int>(iClientUncasted);
 	g_abInitializedClients[iClient] = true;
 	
 	char szAuth[32];
@@ -356,8 +370,9 @@ void IncrementField(int iClient, char[] szField, int iAdd = 1) {
 		
 	if(!g_abInitializedClients[iClient])
 		return;
-		
-	if(!IsServerEligibleForStats())
+	
+	bool bIgnoreRoundState = StrEqual(szField, "playtime", false);
+	if(!IsServerEligibleForStats(bIgnoreRoundState))
 		return;
 	
 	char szAuth[32];
@@ -416,7 +431,8 @@ public void OnClientAuthorized(int iClient, const char[] szAuth) {
 
 // resets everyone's join times whenever the server becomes eligible for stat tracking, and updates playtimes if it already is
 void OnClientDataInitialized(int iClient) {
-	if(IsServerEligibleForStats()) {
+	CreateTimer(60.0, Delayed_NotifyUserOfOpenFrags, iClient);
+	if(IsServerEligibleForStats(true)) {
 		for(int i = 1; i < MaxClients; ++i) {
 			if(!IsClientInGame(i))
 				continue;
@@ -438,12 +454,56 @@ void OnClientDataInitialized(int iClient) {
 	}
 }
 
+Action Delayed_NotifyUserOfOpenFrags(Handle hTimer, int iClient) {
+	if(g_abPlayerNotifiedOfOF[iClient])
+		return Plugin_Handled;
+	g_abPlayerNotifiedOfOF[iClient] = true;
+	
+	char szAuth[32];
+	GetClientAuthId(iClient, AuthId_Steam2, szAuth, 32);
+	
+	char szQueryCheckNotifiedChatAlready[128];
+	Format(szQueryCheckNotifiedChatAlready, 128, "SELECT steamid2, name, notified FROM stats WHERE steamid2 = '%s'", szAuth);
+	g_hSQL.Query(Callback_NotifyUserOfOpenFrags, szQueryCheckNotifiedChatAlready, iClient, DBPrio_High);
+	
+	return Plugin_Handled;
+}
+
+void Callback_NotifyUserOfOpenFrags(Database hSQL, DBResultSet hResults, const char[] szErr, any iClientUncasted) {
+	int iClient = view_as<int>(iClientUncasted);
+	
+	if(!IsValidHandle(hSQL) || !IsValidHandle(hResults))
+		return;
+	
+	if(hResults.RowCount <= 0)
+		return;
+	
+	hResults.FetchRow();
+	bool bNotified = view_as<bool>(hResults.FetchInt(2));
+	
+	if(!bNotified)
+		CPrintToChat(iClient, "%t %t", "OpenFrags ChatPrefix", "OpenFrags Notify");
+	else
+		PrintToConsole(iClient, "[OF] This server is running OpenFrags, use /stats (or sm_openfrags_stats) to see your stats, /top (or sm_openfrags_top) to view the leaderboard and /optout (or sm_openfrags_optout) to completely opt out of the stat tracking");
+	
+	char szAuth[32];
+	hResults.FetchString(0, szAuth, 32);
+	
+	char szQuerySetNotified[128];
+	Format(szQuerySetNotified, 128, "UPDATE stats SET notified=1 WHERE steamid2 = '%s'", szAuth);
+	g_hSQL.Query(Callback_None, szQuerySetNotified, 38, DBPrio_Low);
+}
+
 public void OnClientPutInServer(int iClient) {
 	SDKHook(iClient, SDKHook_OnTakeDamage, Event_PlayerDamaged);
 }
 
-public void OnClientDisconnect(int iClient) {
-	if(g_abPlayerJoinedBeforeHalfway[iClient] && IsRoundHalfwayDone())
+void Event_PlayerDisconnect(Event event, const char[] szEventName, bool bDontBroadcast) {
+	int iClient = GetClientOfUserId(GetEventInt(event, "userid"));
+	char szDisconectReason[128];
+	GetEventString(event, "reason", szDisconectReason, 128);
+	
+	if(g_abPlayerJoinedBeforeHalfway[iClient] && IsRoundHalfwayDone() && g_bRoundGoing && (StrContains(szDisconectReason, "timed out", false) != -1 && StrContains(szDisconectReason, "kicked", false) != -1 && StrContains(szDisconectReason, "connection closing", false) != -1))
 		IncrementField(iClient, "matches");
 	
 	ResetKillstreak(iClient);
@@ -451,12 +511,14 @@ public void OnClientDisconnect(int iClient) {
 	g_abInitializedClients[iClient] = false;
 	g_aiPlayerJoinTimes[iClient] = 0;
 	g_abPlayerJoinedBeforeHalfway[iClient] = false;
+	g_abPlayerNotifiedOfOF[iClient] = false;
 }
 
 public void OnMapStart() {
 	AddServerTagRat("openfrags");
 	g_bRoundGoing = true;
 	g_timeRoundStart = GetTime();
+	g_nCurrentRoundMutator = GetConVarInt(FindConVar("of_mutator"));
 	for(int i = 0; i < MAXPLAYERS; ++i) {
 		g_aiKillstreaks[i] = 0;
 		g_abPlayerDied[i] = false;
@@ -464,8 +526,10 @@ public void OnMapStart() {
 }
 
 public void OnMapEnd() {
+	g_nCurrentRoundMutator = 0;
 	for(int i = 0; i < MAXPLAYERS; ++i) {
 		g_abPlayerJoinedBeforeHalfway[i] = false;
+		g_abPlayerNotifiedOfOF[i] = false;
 	}
 	UpdateStoredStats();
 }
@@ -473,6 +537,7 @@ public void OnMapEnd() {
 void Event_RoundStart(Event event, char[] szEventName, bool bDontBroadcast) {
 	g_bRoundGoing = true;
 	g_timeRoundStart = GetTime();
+	g_nCurrentRoundMutator = GetConVarInt(FindConVar("of_mutator"));
 	for(int i = 0; i < MAXPLAYERS; ++i) {
 		g_aiKillstreaks[i] = 0;
 		g_abPlayerDied[i] = false;
@@ -498,7 +563,7 @@ void UpdateStoredStats(int iClient = -1) {
 		if(!IsClientInGame(iClient))
 			return;
 		
-		if(IsServerEligibleForStats() && IsPlayerActive(iClient)) {
+		if(IsPlayerActive(iClient)) {
 			IncrementField(iClient, "playtime", g_aiPlayerJoinTimes[iClient] == 0 ? 0 : GetTime() - g_aiPlayerJoinTimes[iClient]);
 			IncrementField(iClient, "damage_dealt", g_aiPlayerDamageDealtStore[iClient]);
 			IncrementField(iClient, "damage_taken", g_aiPlayerDamageTakenStore[iClient]);
@@ -1029,6 +1094,10 @@ public Action OnClientSayCommand(int iClient, const char[] szCommand, const char
 		PrintTopPlayers(iClient);
 		return retval;
 	}
+	if(StrEqual(szChatCommand, "optout", false)) {
+		Command_OptOut(iClient, 0);
+		return retval;
+	}
 	if(StrEqual(szChatCommand, "stats", false)) {
 		int aiTargets[1];
 		char szTarget[64];
@@ -1095,24 +1164,106 @@ Action Command_AboutPlugin(int iClient, int iArgs) {
 		CPrintToChat(iClient, "%t %t", "OpenFrags ChatPrefix", "OpenFrags About", PLUGIN_VERSION);
 	else {
 		char szAbout[256];
-		Format(szAbout, 256, "%t %t", "OpenFrags ChatPrefix","OpenFrags About", PLUGIN_VERSION);
+		Format(szAbout, 256, "%t %t", "OpenFrags ChatPrefix", "OpenFrags About", PLUGIN_VERSION);
 		CRemoveTags(szAbout, 256);
 		PrintToServer(szAbout);
 	}
 	return Plugin_Handled;
 }
 
+// for confirmation
+bool g_bOptOutConfirm = false;
+
+int g_iRemovedStatsQ = 0;
+int g_iAddedBanQ = 0;
+bool g_bThrewOptOutErrorAlready = false;
+Action Command_OptOut(int iClient, int iArgs) {
+	if(iClient == 0) {
+		ReplyToCommand(iClient, "You can't run this command as the server!");
+		return Plugin_Handled;
+	}
+	
+	if(!g_bOptOutConfirm) {
+		g_bOptOutConfirm = true;
+		CPrintToChat(iClient, "%t %t", "OpenFrags ChatPrefix", "OpenFrags OptOutConfirm");
+		CreateTimer(10.0, Delayed_OptOutCancel);
+		return Plugin_Handled;
+	}
+	
+	g_bThrewOptOutErrorAlready = false;
+	
+	CPrintToChat(iClient, "%t %t", "OpenFrags ChatPrefix", "OpenFrags OptingOut");
+	
+	char szAuth[32];
+	GetClientAuthId(iClient, AuthId_Steam2, szAuth, 32);
+	
+	char szClientName[64];
+	char szClientNameSafe[129];
+	GetClientName(iClient, szClientName, 64);
+	SQL_EscapeString(g_hSQL, szClientName, szClientNameSafe, 64);
+	
+	char szQueryOptOut[512];
+	Format(szQueryOptOut, 512, "DELETE FROM stats WHERE steamid2 = '%s';", szAuth);
+	g_hSQL.Query(Callback_OptOut_RemovedStats, szQueryOptOut, iClient, DBPrio_High);
+
+	Format(szQueryOptOut, 512, "INSERT INTO bans (steamid2, name, is_banned, ban_reason, timestamp, expiration) VALUES ('%s', '%s', 1, 'In-game opt-out', 0, 0);", szAuth, szClientNameSafe);
+	g_hSQL.Query(Callback_OptOut_AddedBan, szQueryOptOut, iClient, DBPrio_High);
+	return Plugin_Handled;
+}
+
+Action Delayed_OptOutCancel(Handle hTimer) {
+	g_bOptOutConfirm = false;
+	return Plugin_Handled;
+}
+
+void Callback_OptOut_RemovedStats(Database hSQL, DBResultSet hResults, const char[] szErr, any iClientUncasted) {
+	int iClient = view_as<int>(iClientUncasted);
+	if(!IsValidHandle(hSQL) || strlen(szErr) > 0) {
+		if(!g_bThrewOptOutErrorAlready)
+			CPrintToChat(iClient, "%t %t", "OpenFrags ChatPrefix", "OpenFrags Error");
+			
+		g_bThrewOptOutErrorAlready = true;
+		return;
+	}
+	
+	g_iRemovedStatsQ++;
+	if(g_iRemovedStatsQ > 0 && g_iAddedBanQ > 0) {
+		CPrintToChat(iClient, "%t %t", "OpenFrags ChatPrefix", "OpenFrags OptedOut");
+		g_abInitializedClients[iClient] = false;
+		g_iRemovedStatsQ -= 1;
+		g_iAddedBanQ -= 1;
+	}
+}
+
+void Callback_OptOut_AddedBan(Database hSQL, DBResultSet hResults, const char[] szErr, any iClientUncasted) {
+	int iClient = view_as<int>(iClientUncasted);
+	if(!IsValidHandle(hSQL) || strlen(szErr) > 0) {
+		if(!g_bThrewOptOutErrorAlready)
+			CPrintToChat(iClient, "%t %t", "OpenFrags ChatPrefix", "OpenFrags Error");
+		
+		g_bThrewOptOutErrorAlready = true;
+		return;
+	}
+	
+	g_iAddedBanQ++;
+	if(g_iRemovedStatsQ > 0 && g_iAddedBanQ > 0) {
+		CPrintToChat(iClient, "%t %t", "OpenFrags ChatPrefix", "OpenFrags OptedOut");
+		g_abInitializedClients[iClient] = false;
+		g_iRemovedStatsQ -= 1;
+		g_iAddedBanQ -= 1;
+	}
+}
+
 Action Command_TestEligibility(int iClient, int iArgs) {
-	int nMutator = GetConVarInt(FindConVar("of_mutator"));
 	bool bEnoughPlayers = GetClientCount(true) >= 2;
-	bool bMutator = nMutator == OFMutator_None ||
-					nMutator == OFMutator_Arsenal ||
-					nMutator == OFMutator_ClanArena;
+	bool bMutator = g_nCurrentRoundMutator == OFMutator_None ||
+					g_nCurrentRoundMutator == OFMutator_Arsenal ||
+					g_nCurrentRoundMutator == OFMutator_ClanArena;
 	bool bCheats = !GetConVarBool(FindConVar("sv_cheats"));
 	bool bWaitingForPlayers = view_as<bool>(GameRules_GetProp("m_bInWaitingForPlayers"));
 	
 	if(!bEnoughPlayers)
-		ReplyToCommand(iClient, "[OF] You don't have enough players on your server (you have %i, the requirement is %i or more)", GetClientCount(true), 2);
+		ReplyToCommand(iClient, "[OF] The server doens't have enough players (currently %i players, the requirement is %i or more)", GetClientCount(true), 2);
 	
 	if(bWaitingForPlayers)
 		ReplyToCommand(iClient, "[OF] The round hasn't yet started");
@@ -1121,13 +1272,13 @@ Action Command_TestEligibility(int iClient, int iArgs) {
 		ReplyToCommand(iClient, "[OF] The round has already ended");
 
 	if(!bMutator)
-		ReplyToCommand(iClient, "[OF] You have an unacceptable mutator enabled (%i)", nMutator);
+		ReplyToCommand(iClient, "[OF] The server has an unacceptable mutator running (%i)", g_nCurrentRoundMutator);
 	
 	if(!bCheats)
-		ReplyToCommand(iClient, "[OF] You have sv_cheats enabled on your server");
+		ReplyToCommand(iClient, "[OF] The server has sv_cheats enabled");
 	
 	if(bEnoughPlayers && bMutator && bCheats && !bWaitingForPlayers && g_bRoundGoing)
-		ReplyToCommand(iClient, "[OF] Your server is eligible for stat tracking!");
+		ReplyToCommand(iClient, "[OF] This server is eligible for stat tracking! (%i)", IsServerEligibleForStats());
 		
 	return Plugin_Handled;
 }

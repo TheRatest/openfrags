@@ -17,11 +17,31 @@
 	"OpenFrags PlayerStats"
 	{
 		"#format"		"{1:s},{2:s},{3:s}"
-		"en"			"{2}{1}{default}'s stats: (more at openfrags.ohaa.xyz/u/{3})"
+		"en"			"{2}{1}{default}'s stats: (of.ohaa.xyz/u/{3})"
 	}
 	"OpenFrags StatsError"
 	{
 		"en"			"There was an error while getting the stats. Try another time!"
+	}
+	"OpenFrags Error"
+	{
+		"en"			"There was an error while processing your request. Contact the server owner or the plugin author if you see this!"
+	}
+	"OpenFrags Notify"
+	{
+		"en"			"This server is running OpenFrags (of.ohaa.xyz)! Type /stats to see your stats, /top to view the leaderboard and /optout to completely opt out of the stat tracking"
+	}
+	"OpenFrags OptOutConfirm"
+	{
+		"en"			"You are about to erase all your stats and permanently opt out of the tracking. Run this command again to confirm"
+	}
+	"OpenFrags OptingOut"
+	{
+		"en"			"Opting out... (1/2)"
+	}
+	"OpenFrags OptedOut"
+	{
+		"en"			"Successfully erased all your stats and opted out of tracking! (2/2)"
 	}
 	"OpenFrags UninitializedSelf"
 	{
