@@ -4,18 +4,13 @@
 	{
 		"Version"
 		{
-			"Latest"	"1.5"
-			"Previous"	"1.4b"
+			"Latest"	"1.5a"
+			"Previous"	"1.5"
 		}
 		
 		"Notes"	"More info @ openfrags.ohaa.xyz"
-		"Notes"	"Option to opt out of the tracking in-game"
-		"Notes"	"New translation phrases"
-		"Notes"	"The plugin now notifies tracked players of it's presence on join (1st time in chat, subsequent in console)"
-		"Notes"	"Players now don't get a lose whenever they get disconnected due to a crash or kicked"
-		"Notes"	"Fix for ban expiration date 0 not working"
-		"Notes"	"Fix for reading the currrent round mutator"
-		"Notes"	"Fixes for playtime"
+		"Notes"	"Rating formula tweaks"
+		"Notes"	"Opting out now checks if your stats are available"
 	}
 	
 	"Files"
@@ -23,7 +18,6 @@
 		"Patch"
 		{
 			"Plugin"	"Path_SM/plugins/openfrags.smx"
-			"Plugin"	"Path_SM/translations/openfrags.phrases.txt"
 			
 			"Source"	"Path_SM/scripting/myplugin.sp"
 		}

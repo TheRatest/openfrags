@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "1.5"
+#define PLUGIN_VERSION "1.5a"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/main/updatefile.txt"
 #define MIN_LEADERBOARD_HEADSHOTS 15
 #define MIN_LEADERBOARD_MATCHES 3
@@ -589,8 +589,9 @@ void UpdateStoredStats(int iClient = -1) {
 		Format(szUpdateScoreQuery, 512, "UPDATE stats SET \
 													score = greatest(1000 \
 															+ 8 * ((highest_killstreak-5)/5)+pow(greatest(highest_killstreak-3, 0)/8, 2) \
-															+ 250 * pow(winrate * pow(kdr, 2) * pow(60*frags/playtime, 5/2), 1/4) \
-															+ pow(frags, 1/3) \
+															+ 380 * pow(sqrt(winrate)*kdr, 1/2) \
+															+ 18 * pow(60*frags/playtime, 2) \
+															+ 10 * pow(frags, 1/3) \
 															+ 200 * least(2*(railgun_headshotrate*58/25-0.08), 1) \
 															- 100 * ((1-pow(winrate, 1/4))/kdr*5-0.65) \
 															, 1) \
@@ -1094,7 +1095,7 @@ public Action OnClientSayCommand(int iClient, const char[] szCommand, const char
 		PrintTopPlayers(iClient);
 		return retval;
 	}
-	if(StrEqual(szChatCommand, "optout", false)) {
+	if(StrEqual(szChatCommand, "optout", false) || StrEqual(szChatCommand, "opt-out", false)) {
 		Command_OptOut(iClient, 0);
 		return retval;
 	}
@@ -1139,7 +1140,7 @@ Action Command_ViewStats(int iClient, int iArgs) {
 			char szAuth[32];
 			GetCmdArg(1, szAuth, 32);
 			if(strlen(szAuth) < 7) {
-				ReplyToCommand(iClient, "[OpenFrags] No target found; if you meant to use a SteamID2, you need to use quotes (e.g sm_playerstats_stats \"STEAM_0:1:522065531\")")
+				ReplyToCommand(iClient, "[OF] No target found; if you meant to use a SteamID2, you need to use quotes (e.g sm_playerstats_stats \"STEAM_0:1:522065531\")")
 				return Plugin_Handled;
 			}
 			ReplaceString(szAuth, 32, "'", "");
@@ -1181,6 +1182,10 @@ Action Command_OptOut(int iClient, int iArgs) {
 	if(iClient == 0) {
 		ReplyToCommand(iClient, "You can't run this command as the server!");
 		return Plugin_Handled;
+	}
+	
+	if(!g_abInitializedClients) {
+		CPrintToChat(iClient, "%t %t", "OpenFrags ChatPrefix", "OpenFrags UninitializedSelf");
 	}
 	
 	if(!g_bOptOutConfirm) {
