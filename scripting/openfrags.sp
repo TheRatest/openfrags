@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "1.5a"
+#define PLUGIN_VERSION "1.5b"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/main/updatefile.txt"
 #define MIN_LEADERBOARD_HEADSHOTS 15
 #define MIN_LEADERBOARD_MATCHES 3
@@ -589,10 +589,10 @@ void UpdateStoredStats(int iClient = -1) {
 		Format(szUpdateScoreQuery, 512, "UPDATE stats SET \
 													score = greatest(1000 \
 															+ 8 * ((highest_killstreak-5)/5)+pow(greatest(highest_killstreak-3, 0)/8, 2) \
-															+ 380 * pow(sqrt(winrate)*kdr, 1/2) \
-															+ 18 * pow(60*frags/playtime, 2) \
-															+ 10 * pow(frags, 1/3) \
-															+ 200 * least(2*(railgun_headshotrate*58/25-0.08), 1) \
+															+ 340 * pow(sqrt(winrate)*kdr, 1/2) \
+															+ 0.675 * damage_dealt/deaths \
+															+ 5 * pow(frags, 1/3) \
+															+ 100 * least(2*(railgun_headshotrate*58/25-0.08), 1) \
 															- 100 * ((1-pow(winrate, 1/4))/kdr*5-0.65) \
 															, 1) \
 													WHERE steamid2='%s' AND frags>=100 AND highest_killstreak>=1 AND kdr>0 AND playtime>=3600 AND matches>=2;", szAuth)

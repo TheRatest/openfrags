@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"	"1.5a"
-			"Previous"	"1.5"
+			"Latest"	"1.5b"
+			"Previous"	"1.5a"
 		}
 		
 		"Notes"	"More info @ openfrags.ohaa.xyz"
