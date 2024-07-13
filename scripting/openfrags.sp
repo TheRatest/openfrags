@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "1.5b"
+#define PLUGIN_VERSION "1.5c"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/main/updatefile.txt"
 #define MIN_LEADERBOARD_HEADSHOTS 15
 #define MIN_LEADERBOARD_MATCHES 3
@@ -455,6 +455,9 @@ void OnClientDataInitialized(int iClient) {
 }
 
 Action Delayed_NotifyUserOfOpenFrags(Handle hTimer, int iClient) {
+	if(!IsClientInGame(iClient))
+		return Plugin_Handled;
+	
 	if(g_abPlayerNotifiedOfOF[iClient])
 		return Plugin_Handled;
 	g_abPlayerNotifiedOfOF[iClient] = true;
@@ -961,22 +964,22 @@ char szBestPlaytimerColor[12];
 float flMostPlaytimeHours = 0.0;
 
 void PrintTopPlayers(int iClient) {
-	char szQuery[256];
+	char szQuery[512];
 	
 	// only once all the queries have finished the player will get the leaderboard
-	Format(szQuery, 256, "SELECT steamid2, name, color, score FROM stats WHERE (score = (SELECT MAX(score) FROM stats)) AND matches >= %i", MIN_LEADERBOARD_MATCHES);
+	Format(szQuery, 512, "SELECT steamid2, name, color, score FROM stats WHERE score = (SELECT MAX(score) FROM stats) AND matches >= %i ORDER BY score DESC;", MIN_LEADERBOARD_MATCHES);
 	g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopRated, szQuery, iClient);
 	
-	Format(szQuery, 256, "SELECT steamid2, name, color, frags FROM stats WHERE (frags = (SELECT MAX(frags) FROM stats)) AND matches >= %i", MIN_LEADERBOARD_MATCHES);
+	Format(szQuery, 512, "SELECT steamid2, name, color, frags FROM stats WHERE (frags = (SELECT MAX(frags) FROM stats)) AND matches >= %i ORDER BY frags DESC;", MIN_LEADERBOARD_MATCHES);
 	g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopFragger, szQuery, iClient);
 
-	Format(szQuery, 256, "SELECT steamid2, name, color, railgun_headshotrate, railgun_headshots, railgun_bodyshots, railgun_misses FROM stats WHERE (railgun_headshotrate = (SELECT MAX(railgun_headshotrate)) AND railgun_headshots > %i) AND matches >= %i", MIN_LEADERBOARD_HEADSHOTS, MIN_LEADERBOARD_MATCHES);
+	Format(szQuery, 512, "SELECT steamid2, name, color, railgun_headshotrate, railgun_headshots, railgun_bodyshots, railgun_misses FROM stats WHERE railgun_headshots > %i AND matches >= %i ORDER BY railgun_headshotrate DESC;", MIN_LEADERBOARD_HEADSHOTS, MIN_LEADERBOARD_MATCHES);
 	g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopHeadshotter, szQuery, iClient);
 
-	Format(szQuery, 256, "SELECT steamid2, name, color, highest_killstreak, highest_killstreak_map FROM stats WHERE (highest_killstreak = (SELECT MAX(highest_killstreak) FROM stats)) AND matches >= %i", MIN_LEADERBOARD_MATCHES);
+	Format(szQuery, 512, "SELECT steamid2, name, color, highest_killstreak, highest_killstreak_map FROM stats WHERE (highest_killstreak = (SELECT MAX(highest_killstreak) FROM stats)) AND matches >= %i ORDER BY highest_killstreak DESC;", MIN_LEADERBOARD_MATCHES);
 	g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopKillstreaker, szQuery, iClient);
 	
-	Format(szQuery, 256, "SELECT steamid2, name, color, playtime FROM stats WHERE (playtime = (SELECT MAX(playtime) FROM stats)) AND matches >= %i", MIN_LEADERBOARD_MATCHES);
+	Format(szQuery, 512, "SELECT steamid2, name, color, playtime FROM stats WHERE (playtime = (SELECT MAX(playtime) FROM stats)) AND matches >= %i ORDER BY playtime DESC;", MIN_LEADERBOARD_MATCHES);
 	g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopPlaytimer, szQuery, iClient);
 }
 

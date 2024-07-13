@@ -4,13 +4,13 @@
 	{
 		"Version"
 		{
-			"Latest"	"1.5b"
-			"Previous"	"1.5a"
+			"Latest"	"1.5c"
+			"Previous"	"1.5b"
 		}
 		
 		"Notes"	"More info @ openfrags.ohaa.xyz"
-		"Notes"	"Rating formula tweaks"
-		"Notes"	"Opting out now checks if your stats are available"
+		"Notes"	"Notify bugfix"
+		"Notes"	"/top headshot percentage bugfix"
 	}
 	
 	"Files"
