@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"	"1.6b"
-			"Previous"	"1.6a"
+			"Latest"	"1.6c"
+			"Previous"	"1.6b"
 		}
 		
 		"Notes"	"More info @ github.com/TheRatest/openfrags/tree/duels"

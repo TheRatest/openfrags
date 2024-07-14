@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "1.6b"
+#define PLUGIN_VERSION "1.6c"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/duels/updatefile.txt"
 #define MAX_LEADERBOARD_NAME_LENGTH 32
 #define RATING_COLOR_TOP1 "{mediumpurple}"
@@ -64,7 +64,7 @@
 												VALUES ( \
 												'%s', \
 												'%s', \
-												'%s' \
+												%i \
 												);"
 #define QUERY_GETPLAYERELO "SELECT \
 									steamid2, \
@@ -80,7 +80,7 @@
 												from stats_duels) \
 											as rating_place WHERE steamid2 = '%s') \
 										as rating_place \
-									FROM stats_duels_duels \
+									FROM stats_duels \
 									WHERE steamid2 = '%s';"
 									
 #define QUERY_GETELOLEADERBOARD "SELECT \
@@ -88,7 +88,7 @@
 									name, \
 									color, \
 									elo \
-									FROM stats_duels_duels \
+									FROM stats_duels \
 									WHERE steamid2 = '%s' \
 									ORDER BY elo DESC \
 									LIMIT 0, 10;"
@@ -367,7 +367,8 @@ void InitPlayerData(int iClient) {
 	g_hSQL.Query(Callback_InitPlayerData_Check, szQueryCheckPlayerBan, iClient, DBPrio_High);
 }
 
-void Callback_InitPlayerData_Check(Database hSQL, DBResultSet hResults, const char[] szErr, int iClient) {
+void Callback_InitPlayerData_Check(Database hSQL, DBResultSet hResults, const char[] szErr, any iClientUncasted) {
+	int iClient = view_as<int>(iClientUncasted);
 	if(hResults.RowCount > 0) {
 		hResults.FetchRow();
 		bool bBanned = view_as<bool>(hResults.FetchInt(2));
