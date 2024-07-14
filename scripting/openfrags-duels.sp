@@ -547,10 +547,14 @@ void Callback_NotifyUserOfOpenFrags(Database hSQL, DBResultSet hResults, const c
 	hResults.FetchRow();
 	bool bNotified = view_as<bool>(hResults.FetchInt(2));
 	
-	if(!bNotified)
-		CPrintToChat(iClient, "%t %t", "OpenFrags-Duels ChatPrefix", "OpenFrags Notify");
-	else
-		PrintToConsole(iClient, "[OF] This server is running OpenFrags-Duels; Available commands:\n/stats to see your stats\n/top to view the leaderboard\n/elos to see the current players' Elos\n/elo to see your elo\n/optout to completely opt out of the stat tracking");
+	if(!bNotified) {
+		CPrintToChat(iClient, "%t %t", "OpenFrags-Duels ChatPrefix", "OpenFrags-Duels Notify");
+		PrintToConsole(iClient, "[OFD] Available commands:\n/stats to see your stats\n/top to view the leaderboard\n/elos to see the current players' Elos\n/elo to see your elo\n/optout to completely opt out of the stat tracking");
+	}
+	else {
+		PrintToConsole(iClient, "[OFD] This server is running OpenFrags-Duels");
+		PrintToConsole(iClient, "[OFD] Available commands:\n/stats to see your stats\n/top to view the leaderboard\n/elos to see the current players' Elos\n/elo to see your elo\n/optout to completely opt out of the stat tracking");
+	}
 	
 	char szAuth[32];
 	hResults.FetchString(0, szAuth, 32);
@@ -1092,12 +1096,16 @@ void Callback_PrintPlayerElo_Check(Database hSQL, DBResultSet hResults, const ch
 	} else {
 		g_bPrintPlayerStatsScrewedUp = false;
 		hDatapack.WriteCell(CloneHandle(hResults));
-
-		Callback_PrintPlayerElo_Finish(hSQL, view_as<DBResultSet>(INVALID_HANDLE), szErr, hDatapack);
+		
+		char szAuthToUse[32];
+		hResults.FetchString(0, szAuthToUse, 32);
+		char szQuery[512];
+		Format(szQuery, 512, "SELECT * FROM (select ROW_NUMBER() OVER (ORDER BY elo DESC) rating_place, elo, steamid2, name FROM stats_duels) AS gnarp WHERE steamid2 = '%s';", szAuthToUse);
+		g_hSQL.Query(Callback_PrintPlayerElo_Finish, szQuery, hDatapack);
 	}
 }
 
-void Callback_PrintPlayerElo_Finish(Database hSQL, DBResultSet hNuthin, const char[] szErr, any hDatapackUncasted) {
+void Callback_PrintPlayerElo_Finish(Database hSQL, DBResultSet hResultsRatingPlace, const char[] szErr, any hDatapackUncasted) {
 	DataPack hDatapack = view_as<DataPack>(hDatapackUncasted);
 	hDatapack.Reset();
 	int iClient = hDatapack.ReadCell();
@@ -1105,6 +1113,7 @@ void Callback_PrintPlayerElo_Finish(Database hSQL, DBResultSet hNuthin, const ch
 	hDatapack.ReadString(szQueriedAuth, 32);
 	DBResultSet hResults = hDatapack.ReadCell();
 	hResults.FetchRow();
+	hResultsRatingPlace.FetchRow();
 	
 	char szAuth[32];
 	char szStatOwnerAuth[32];
@@ -1118,7 +1127,7 @@ void Callback_PrintPlayerElo_Finish(Database hSQL, DBResultSet hNuthin, const ch
 	char szColor[12];
 	ColorIntToHex(iColor, szColor, 12);
 	int iElo = hResults.FetchInt(3);
-	int iEloPlace = hResults.FetchInt(4);
+	int iEloPlace = hResultsRatingPlace.FetchInt(0);
 	char szEloPlaceColor[12];
 	CloseHandle(hResults);
 	
@@ -1152,7 +1161,7 @@ void PrintPlayerElos(int iClient) {
 		GetClientAuthId(i, AuthId_Steam2, szAuth, 32);
 		Format(szQuery, 4096, "%s steamid2='%s' OR", szQuery, szAuth);
 	}
-	Format(szQuery, strlen(szQuery)-3, "%s", szQuery);
+	Format(szQuery, strlen(szQuery)-2, "%s", szQuery);
 	Format(szQuery, 4096, "%s ORDER BY elo DESC;", szQuery);
 	g_hSQL.Query(Callback_PrintPlayerElos_Finish, szQuery, iClient);
 }

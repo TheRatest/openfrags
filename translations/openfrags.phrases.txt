@@ -160,6 +160,11 @@
 		"#format"		"{1:s}"
 		"en"			"OpenFrags-Duels is a fork of OpenFrags designed for duels\nLearn more at openfrags.ohaa.xyz OR https://github.com/TheRatest/openfrags/tree/duels\nPlugin version: {1}"
 	}
+	"OpenFrags-Duels Notify"
+	{
+		"#format"		"{1:s}"
+		"en"			"This server is running OpenFrags-Duels; Check your console for chat commands\nPlugin version: {1}"
+	}
 	"OpenFrags-Duels RoundStartElos"
 	{
 		"#format"		"{1:s},{2:s},{3:i},{4:s},{5:s},{6:i}"

@@ -4,12 +4,12 @@
 	{
 		"Version"
 		{
-			"Latest"	"d1.0"
-			"Previous"	"1.6d"
+			"Latest"	"d1.1"
+			"Previous"	"d1.0"
 		}
 		
 		"Notes"	"More info @ github.com/TheRatest/openfrags/tree/duels"
-		"Notes"	"OpenFrags-Duels Release(tm)"
+		"Notes"	"OpenFrags-Duels Release 2(tm)"
 	}
 	
 	"Files"
