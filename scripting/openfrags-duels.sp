@@ -940,8 +940,9 @@ void Callback_PrintPlayerStats_Check(Database hSQL, DBResultSet hResults, const 
 		} else {
 			char szAuthToUse[32];
 			hResults.FetchString(0, szAuthToUse, 32);
-			char szQuery[256];
-			Format(szQuery, 256, "SELECT * FROM (select ROW_NUMBER() OVER (ORDER BY elo DESC) rating_place, elo, steamid2, name FROM stats_duels) AS gnarp WHERE steamid2 = '%s';", szAuthToUse);
+			char szQuery[512];
+			Format(szQuery, 512, "SELECT * FROM (select ROW_NUMBER() OVER (ORDER BY elo DESC) rating_place, elo, steamid2, name FROM stats_duels) AS gnarp WHERE steamid2 = '%s';", szAuthToUse);
+			LogMessage(szQuery);
 			g_hSQL.Query(Callback_PrintPlayerStats_Finish, szQuery, hDatapack, DBPrio_Normal);
 		}
 	}
@@ -1061,8 +1062,8 @@ void PrintPlayerElo(int iClient, int iStatsOwner, char[] szAuthArg = "") {
 	hDatapack.WriteCell(iClient);
 	hDatapack.WriteString(szAuthToUse);
 
-	char szQuery[256];
-	Format(szQuery, 256, QUERY_GETPLAYERELO, szAuthToUse, szAuthToUse);
+	char szQuery[512];
+	Format(szQuery, 512, QUERY_GETPLAYERELO, szAuthToUse, szAuthToUse);
 	g_hSQL.Query(Callback_PrintPlayerElo_Check, szQuery, hDatapack, DBPrio_Normal);
 }
 
@@ -1073,7 +1074,7 @@ void Callback_PrintPlayerElo_Check(Database hSQL, DBResultSet hResults, const ch
 		int iClient = hDatapack.ReadCell();
 		g_bPrintPlayerStatsScrewedUp = true;
 		char szAuthToUse[32];
-		char szQuery[256];
+		char szQuery[512];
 		GetClientAuthId(iClient, AuthId_Steam2, szAuthToUse, 32);
 
 		CloseHandle(hDatapack);
@@ -1081,7 +1082,7 @@ void Callback_PrintPlayerElo_Check(Database hSQL, DBResultSet hResults, const ch
 		hNewDatapack.WriteCell(iClient);
 		hNewDatapack.WriteString(szAuthToUse);
 		
-		Format(szQuery, 256, QUERY_GETPLAYERELO, szAuthToUse, szAuthToUse);
+		Format(szQuery, 512, QUERY_GETPLAYERELO, szAuthToUse, szAuthToUse);
 		g_hSQL.Query(Callback_PrintPlayerStats_Check, szQuery, hNewDatapack, DBPrio_Normal);
 	} else if(hResults.RowCount < 1) {
 		hDatapack.Reset();
@@ -1143,7 +1144,7 @@ void Callback_PrintPlayerElo_Finish(Database hSQL, DBResultSet hNuthin, const ch
 void PrintPlayerElos(int iClient) {
 	char szQuery[4096];
 	Format(szQuery, 4096, "SELECT steamid2, name, color, elo FROM stats_duels WHERE ");
-	for(int i = 0; i < MaxClients; ++i) {
+	for(int i = 1; i < MaxClients; ++i) {
 		if(!IsClientInGame(i))
 			continue;
 		
