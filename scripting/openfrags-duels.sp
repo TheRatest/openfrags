@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "d1.0"
+#define PLUGIN_VERSION "d1.1"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/duels/updatefile.txt"
 #define MAX_LEADERBOARD_NAME_LENGTH 32
 #define RATING_COLOR_TOP1 "{mediumpurple}"
@@ -120,6 +120,7 @@ int g_aiPlayerDamageTakenStore[MAXPLAYERS];
 bool g_abPlayerJoinedBeforeHalfway[MAXPLAYERS];
 int g_aiElos[MAXPLAYERS];
 bool g_abPlayerNotifiedOfOF[MAXPLAYERS];
+int g_iCurrentDuelers[2];
 bool g_bRoundGoing = true;
 int g_timeRoundStart = 0;
 bool g_bSvTagsChangedDebounce = false;
@@ -573,13 +574,27 @@ void Event_PlayerDisconnect(Event event, const char[] szEventName, bool bDontBro
 	char szDisconectReason[128];
 	GetEventString(event, "reason", szDisconectReason, 128);
 	
-	if(g_abPlayerJoinedBeforeHalfway[iClient] && IsRoundHalfwayDone() && g_bRoundGoing && (StrContains(szDisconectReason, "timed out", false) != -1 && StrContains(szDisconectReason, "kicked", false) != -1 && StrContains(szDisconectReason, "connection closing", false) != -1))
+	if(g_abPlayerJoinedBeforeHalfway[iClient] && IsRoundHalfwayDone() && g_bRoundGoing && (StrContains(szDisconectReason, "timed out", false) == -1 && StrContains(szDisconectReason, "kicked", false) == -1 && StrContains(szDisconectReason, "connection closing", false) == -1)) {
 		IncrementField(iClient, "matches");
+		if(g_iCurrentDuelers[0] != -1 && g_iCurrentDuelers[1] != -1) {
+			int iWinner = g_iCurrentDuelers[0] == iClient ? g_iCurrentDuelers[1] : g_iCurrentDuelers[0];
+			int iLoser = g_iCurrentDuelers[0] == iClient ? g_iCurrentDuelers[0] : g_iCurrentDuelers[1];
+			
+			IncrementField(iWinner, "matches");
+			IncrementField(iWinner, "wins");
+	
+			UpdatePlayerElo(iWinner, GetExpectedScore(iWinner, iLoser), true);
+			UpdatePlayerElo(iLoser, GetExpectedScore(iLoser, iWinner), false);
+		}
+	}
 	
 	ResetKillstreak(iClient);
 	UpdateStoredStats(iClient);
 	g_abInitializedClients[iClient] = false;
 	g_aiPlayerJoinTimes[iClient] = 0;
+	g_aiElos[iClient] = 0;
+	g_iCurrentDuelers[0] = -1;
+	g_iCurrentDuelers[1] = -1;
 	g_abPlayerJoinedBeforeHalfway[iClient] = false;
 	g_abPlayerNotifiedOfOF[iClient] = false;
 }
@@ -589,6 +604,8 @@ public void OnMapStart() {
 	g_bRoundGoing = true;
 	g_timeRoundStart = GetTime();
 	g_nCurrentRoundMutator = GetConVarInt(FindConVar("of_mutator"));
+	g_iCurrentDuelers[0] = -1;
+	g_iCurrentDuelers[1] = -1;
 	for(int i = 0; i < MAXPLAYERS; ++i) {
 		g_aiKillstreaks[i] = 0;
 		g_abPlayerDied[i] = false;
@@ -597,6 +614,8 @@ public void OnMapStart() {
 
 public void OnMapEnd() {
 	g_nCurrentRoundMutator = 0;
+	g_iCurrentDuelers[0] = -1;
+	g_iCurrentDuelers[1] = -1;
 	for(int i = 0; i < MAXPLAYERS; ++i) {
 		g_abPlayerJoinedBeforeHalfway[i] = false;
 		g_abPlayerNotifiedOfOF[i] = false;
@@ -621,6 +640,8 @@ void Event_RoundStart(Event event, char[] szEventName, bool bDontBroadcast) {
 }
 
 Action Delayed_PrintDuelersElos(Handle hTimer) {
+	if(GameRules_GetProp("m_bInWaitingForPlayers"))
+		return Plugin_Handled;
 	if(!GetConVarBool(g_cvarNotifyElos))
 		return Plugin_Handled;
 	
@@ -640,6 +661,8 @@ Action Delayed_PrintDuelersElos(Handle hTimer) {
 		LogError("Couldn't find the duel players to print their elos");
 		return Plugin_Handled;
 	}
+	g_iCurrentDuelers[0] = iClient1;
+	g_iCurrentDuelers[1] = iClient2;
 	char szClient1[64];
 	char szClient2[64];
 	GetClientName(iClient1, szClient1, 64);
@@ -826,12 +849,30 @@ Action Event_RocketTouch(int iEntity, int iOther) {
 }
 
 float GetExpectedScore(int iClient1, int iClient2) {
+	if(iClient1 < 1 || iClient2 < 1) {
+		LogError("GetExpectedScore: invalid client (%i, %i)", iClient1, iClient2);
+		return 0.0;
+	}
+	if(g_aiElos[iClient1] == 0 || g_aiElos[iClient2] == 0) {
+		return 0.0;
+	}
 	float flEloDiff = float(g_aiElos[iClient2]) - float(g_aiElos[iClient1]);
 	float flWinProbability = flEloDiff / 400.0;
 	return (1.0/(1 + Pow(10.0, flWinProbability)));
 }
 
 void UpdatePlayerElo(int iClient, float flExpectedScore, bool bWon) {
+	if(flExpectedScore == 0.0)
+		return;
+	
+	if(iClient < 1) {
+		LogError("UpdatePlayerElo: invalid client (%i)", iClient);
+		return;
+	}
+	
+	if(g_aiElos[iClient] == 0)
+		return;
+	
 	char szAuth[32];
 	GetClientAuthId(iClient, AuthId_Steam2, szAuth, 32);
 	
@@ -842,6 +883,9 @@ void UpdatePlayerElo(int iClient, float flExpectedScore, bool bWon) {
 		flDevelopmentFactor = 10.0;
 	
 	g_aiElos[iClient] = RoundToCeil(float(g_aiElos[iClient]) + flDevelopmentFactor*((bWon ? 1.0 : 0.0) - flExpectedScore));
+	if(g_aiElos[iClient] < 100)
+		g_aiElos[iClient] = 100;
+	
 	char szUpdateEloQuery[256];
 	Format(szUpdateEloQuery, 256, "UPDATE stats_duels SET \
 													elo = %i \
