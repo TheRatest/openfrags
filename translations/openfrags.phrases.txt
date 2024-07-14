@@ -151,4 +151,46 @@
 		"#format"		"{1:s},{2:s},{3:i},{4:i}"
 		"en"			"{default}Highest Playtime: {2}{1} {default}- {3}.{4} hours"
 	}
+		"OpenFrags-Duels ChatPrefix"
+	{
+		"en"			"{mediumpurple}[OFD]{default}"
+	}
+	"OpenFrags-Duels About"
+	{
+		"#format"		"{1:s}"
+		"en"			"OpenFrags-Duels is a fork of OpenFrags designed for duels\nLearn more at openfrags.ohaa.xyz OR https://github.com/TheRatest/openfrags/tree/duels\nPlugin version: {1}"
+	}
+	"OpenFrags-Duels RoundStartElos"
+	{
+		"#format"		"{1:s},{2:s},{3:i},{4:s},{5:s},{6:i}"
+		"en"			"{2}{1} ({3}) VS {5}{4} ({6})"
+	}
+	"OpenFrags-Duels YourElo"
+	{
+		"#format"		"{1:i}"
+		"en"			"Your Elo: {1}"
+	}
+	"OpenFrags-Duels PlayerElo"
+	{
+		"#format"		"{1:s},{2:s},{3:i}"
+		"en"			"{2}{1}'s {default}Elo: {1}"
+	}
+	"OpenFrags-Duels PlayersElos"
+	{
+		"en"			"Players' Elos:"
+	}
+	"OpenFrags-Duels PlayersElo"
+	{
+		"#format"		"{1:i},{2:s},{3:s},{4:i}"
+		"en"			"{1}. {3}{2} {default} - {4}"
+	}
+	"OpenFrags-Duels Leaderboard"
+	{
+		"en"			"Elo Leaderboard:"
+	}
+	"OpenFrags-Duels LeaderboardPlayer"
+	{
+		"#format"		"{1:i},{2:s},{3:s},{4:i}"
+		"en"			"{1}. {3}{2} - {4}"
+	}
 }
