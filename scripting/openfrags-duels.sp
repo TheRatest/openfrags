@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "1.6d"
+#define PLUGIN_VERSION "d1.0"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/duels/updatefile.txt"
 #define MAX_LEADERBOARD_NAME_LENGTH 32
 #define RATING_COLOR_TOP1 "{mediumpurple}"
@@ -409,7 +409,7 @@ void Callback_InitPlayerData_Final(Database hSQL, DBResultSet hResults, const ch
 	
 	g_abInitializedClients[iClient] = true;
 	hResults.FetchRow();
-	g_aiElos[iClient] = hResults.FetchInt(27);
+	g_aiElos[iClient] = hResults.FetchInt(3);
 	
 	char szAuth[32];
 	GetClientAuthId(iClient, AuthId_Steam2, szAuth, 32);
