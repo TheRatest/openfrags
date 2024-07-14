@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "1.6a"
+#define PLUGIN_VERSION "1.6b"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/duels/updatefile.txt"
 #define MAX_LEADERBOARD_NAME_LENGTH 32
 #define RATING_COLOR_TOP1 "{mediumpurple}"
@@ -56,16 +56,15 @@
 												  `bannedby` varchar(32) DEFAULT NULL, \
 												  PRIMARY KEY (`steamid2`) \
 												) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;"
-#define QUERY_INSERTPLAYER "INSERT IGNORE INTO stats_duels (steamid2, \
+#define QUERY_INSERTPLAYER "INSERT IGNORE INTO stats_duels ( \
+												steamid2, \
 												name, \
-												color, \
-												elo, \
-												notified \
+												color \
 												) \
 												VALUES ( \
 												'%s', \
 												'%s', \
-												1000, 0 \
+												'%s' \
 												);"
 #define QUERY_GETPLAYERELO "SELECT \
 									steamid2, \
@@ -389,7 +388,7 @@ void Callback_InitPlayerData_Check(Database hSQL, DBResultSet hResults, const ch
 	
 	// won't run if there's an existing entry for the player
 	char szQueryInsertNewPlayer[512];
-	Format(szQueryInsertNewPlayer, 512, QUERY_INSERTPLAYER, szAuth, szClientNameSafe);
+	Format(szQueryInsertNewPlayer, 512, QUERY_INSERTPLAYER, szAuth, szClientNameSafe, GetPlayerColor(iClient));
 	g_hSQL.Query(Callback_InitPlayerData_GetElo, szQueryInsertNewPlayer, iClient, DBPrio_High);
 }
 
