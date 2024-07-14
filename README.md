@@ -1,22 +1,31 @@
 # About
-OpenFrags is a SourceMod plugin for [Open Fortress](https://openfortress.fun) that allows cross-server stat tracking and viewing it using fancy web pages and chat commands  
+OpenFrags-Duels is a fork of OpenFrags intended for duels and a SourceMod plugin for [Open Fortress](https://openfortress.fun) that allows cross-server stat tracking and viewing it using fancy web pages and chat commands  
 More info at http://openfrags.ohaa.xyz
+
+#### ConVars:
+
+```
+sm_openfrags_announce_elos [0 or 1] (Default: 1) - Announce player ELOs each time a round starts
+```
 
 #### Server commands:
 ```
-sm_openfrags - About OpenFrags
+sm_openfrags - About OpenFrags-Duels
+sm_openfrags_duels - An alias for sm_openfrags
 sm_openfrags_stats [Name/SteamID2] - View your stats (or someone else's)
 sm_openfrags_top - View the top players
 sm_openfrags_leaderboard - An alias for sm_openfrags_top
-sm_openfrags_eligibility (admin only) - Test the server for stat tracking eligibility
+sm_openfrags_eligibility - Test the server for stat tracking eligibility
 sm_openfrags_test_query (admin only) - Increase the caller's damage_dealt stat by 1
 ```
 
 #### Chat commands:
 ```
-!openfrags
-!top
+!openfrags / !openfrags_duels
+!top / !leaderboard
 !stats
+!elo / !rating
+!elos / !ratings
 ```
 
 # Installation:
