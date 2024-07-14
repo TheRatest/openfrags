@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "d1.1"
+#define PLUGIN_VERSION "d1.0"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/duels/updatefile.txt"
 #define MAX_LEADERBOARD_NAME_LENGTH 32
 #define RATING_COLOR_TOP1 "{mediumpurple}"
@@ -549,11 +549,11 @@ void Callback_NotifyUserOfOpenFrags(Database hSQL, DBResultSet hResults, const c
 	
 	if(!bNotified) {
 		CPrintToChat(iClient, "%t %t", "OpenFrags-Duels ChatPrefix", "OpenFrags-Duels Notify");
-		PrintToConsole(iClient, "[OFD] Available commands:\n/stats to see your stats\n/top to view the leaderboard\n/elos to see the current players' Elos\n/elo to see your elo\n/optout to completely opt out of the stat tracking");
+		PrintToConsole(iClient, "[OFD] Available commands:\n/stats to see your stats\n/top to view the leaderboard\n/elos to see the current players' Elos\n/elo to see your Elo\n/optout to completely opt out of the stat tracking");
 	}
 	else {
 		PrintToConsole(iClient, "[OFD] This server is running OpenFrags-Duels");
-		PrintToConsole(iClient, "[OFD] Available commands:\n/stats to see your stats\n/top to view the leaderboard\n/elos to see the current players' Elos\n/elo to see your elo\n/optout to completely opt out of the stat tracking");
+		PrintToConsole(iClient, "[OFD] Available commands:\n/stats to see your stats\n/top to view the leaderboard\n/elos to see the current players' Elos\n/elo to see your Elo\n/optout to completely opt out of the stat tracking");
 	}
 	
 	char szAuth[32];
@@ -1095,25 +1095,19 @@ void Callback_PrintPlayerElo_Check(Database hSQL, DBResultSet hResults, const ch
 		return;
 	} else {
 		g_bPrintPlayerStatsScrewedUp = false;
-		hDatapack.WriteCell(CloneHandle(hResults));
+		hDatapack.WriteCell(hResults);
 		
-		char szAuthToUse[32];
-		hResults.FetchString(0, szAuthToUse, 32);
-		char szQuery[512];
-		Format(szQuery, 512, "SELECT * FROM (select ROW_NUMBER() OVER (ORDER BY elo DESC) rating_place, elo, steamid2, name FROM stats_duels) AS gnarp WHERE steamid2 = '%s';", szAuthToUse);
-		g_hSQL.Query(Callback_PrintPlayerElo_Finish, szQuery, hDatapack);
+		PrintPlayerElo_Finish(hDatapack);
 	}
 }
 
-void Callback_PrintPlayerElo_Finish(Database hSQL, DBResultSet hResultsRatingPlace, const char[] szErr, any hDatapackUncasted) {
-	DataPack hDatapack = view_as<DataPack>(hDatapackUncasted);
+void PrintPlayerElo_Finish(DataPack hDatapack) {
 	hDatapack.Reset();
 	int iClient = hDatapack.ReadCell();
 	char szQueriedAuth[32];
 	hDatapack.ReadString(szQueriedAuth, 32);
 	DBResultSet hResults = hDatapack.ReadCell();
 	hResults.FetchRow();
-	hResultsRatingPlace.FetchRow();
 	
 	char szAuth[32];
 	char szStatOwnerAuth[32];
@@ -1127,9 +1121,8 @@ void Callback_PrintPlayerElo_Finish(Database hSQL, DBResultSet hResultsRatingPla
 	char szColor[12];
 	ColorIntToHex(iColor, szColor, 12);
 	int iElo = hResults.FetchInt(3);
-	int iEloPlace = hResultsRatingPlace.FetchInt(0);
+	int iEloPlace = hResults.FetchInt(4);
 	char szEloPlaceColor[12];
-	CloseHandle(hResults);
 	
 	if(iEloPlace == 1)
 		strcopy(szEloPlaceColor, 32, RATING_COLOR_TOP1);
@@ -1179,7 +1172,7 @@ void Callback_PrintPlayerElos_Finish(Database hSQL, DBResultSet hResults, const 
 		char szColor[12];
 		ColorIntToHex(hResults.FetchInt(2), szColor, 12);
 		int iElo = hResults.FetchInt(3);
-		CPrintToChat(iClient, "%t", "OpenFrags-Duels PlayersElo", i, szName, szColor, iElo);
+		CPrintToChat(iClient, "%t", "OpenFrags-Duels PlayersElo", i+1, szName, szColor, iElo);
 	}
 }
 
