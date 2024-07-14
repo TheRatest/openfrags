@@ -89,8 +89,8 @@
 	}
 	"OpenFrags StatsMatches"
 	{
-		"#format"		"{1:i},{2:i},{3:i}"
-		"en"			"Wins/Top 3s/Matches: {1}/{2}/{3}"
+		"#format"		"{1:i},{2:i}"
+		"en"			"Wins/Matches: {1}/{2}"
 	}
 	"OpenFrags StatsDamage"
 	{

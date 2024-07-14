@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "1.6c"
+#define PLUGIN_VERSION "1.6d"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/duels/updatefile.txt"
 #define MAX_LEADERBOARD_NAME_LENGTH 32
 #define RATING_COLOR_TOP1 "{mediumpurple}"
@@ -77,9 +77,9 @@
 												elo, \
 												steamid2, \
 												name \
-												from stats_duels) \
-											as rating_place WHERE steamid2 = '%s') \
-										as rating_place \
+												FROM stats_duels) \
+											AS rating_place WHERE steamid2 = '%s') \
+										AS rating_place \
 									FROM stats_duels \
 									WHERE steamid2 = '%s';"
 									
@@ -941,13 +941,16 @@ void Callback_PrintPlayerStats_Check(Database hSQL, DBResultSet hResults, const 
 			char szAuthToUse[32];
 			hResults.FetchString(0, szAuthToUse, 32);
 			char szQuery[256];
-			Format(szQuery, 256, "SELECT * from (select ROW_NUMBER() OVER (ORDER BY elo DESC) rating_place, elo, steamid2, name from stats) AS gnarp WHERE steamid2 = '%s';", szAuthToUse);
+			Format(szQuery, 256, "SELECT * FROM (select ROW_NUMBER() OVER (ORDER BY elo DESC) rating_place, elo, steamid2, name FROM stats_duels) AS gnarp WHERE steamid2 = '%s';", szAuthToUse);
 			g_hSQL.Query(Callback_PrintPlayerStats_Finish, szQuery, hDatapack, DBPrio_Normal);
 		}
 	}
 }
 
 void Callback_PrintPlayerStats_Finish(Database hSQL, DBResultSet hResultsRatingPlace, const char[] szErr, any hDatapackUncasted) {
+	if(strlen(szErr) > 0) {
+		LogError("Couldn't query for Elo place: %s");
+	}
 	DataPack hDatapack = view_as<DataPack>(hDatapackUncasted);
 	hDatapack.Reset();
 	int iClient = hDatapack.ReadCell();
@@ -984,18 +987,16 @@ void Callback_PrintPlayerStats_Finish(Database hSQL, DBResultSet hResultsRatingP
 	int iSSGMisses = hResults.FetchInt(16);
 	int iMatches = hResults.FetchInt(17);
 	int iWins = hResults.FetchInt(18);
-	int iTop3Wins = hResults.FetchInt(19);
-	//float flWinrate = hResults.FetchFloat(20);
-	int iPlaytime = hResults.FetchInt(22);
+	int iPlaytime = hResults.FetchInt(21);
 	float flPlaytimeHours = iPlaytime / 60.0 / 60.0;
 	int iPlaytimeHoursHigh = RoundFloat(flPlaytimeHours * 10) / 10;
 	int iPlaytimeHoursLow = RoundFloat(flPlaytimeHours * 10) % 10;
-	int iHighestKS = hResults.FetchInt(23);
+	int iHighestKS = hResults.FetchInt(22);
 	char szHighestKSMap[64];
-	hResults.FetchString(24, szHighestKSMap, 64);
-	int iDamageDealt = hResults.FetchInt(25);
-	int iDamageTaken = hResults.FetchInt(26);
-	int iRating = hResults.FetchInt(27);
+	hResults.FetchString(23, szHighestKSMap, 64);
+	int iDamageDealt = hResults.FetchInt(24);
+	int iDamageTaken = hResults.FetchInt(25);
+	int iRating = hResults.FetchInt(26);
 	int iRatingPlace = 0;
 	char szRatingColor[32];
 	if(IsValidHandle(hResultsRatingPlace)) {
@@ -1024,7 +1025,7 @@ void Callback_PrintPlayerStats_Finish(Database hSQL, DBResultSet hResultsRatingP
 		CPrintToChat(iClient, "%t %t", "OpenFrags-Duels ChatPrefix", "OpenFrags PlayerStats", szName, szColor, szStatOwnerAuth);
 
 	CPrintToChat(iClient, "%t", "OpenFrags StatsRating", iRating, iRatingPlace, szRatingColor);
-	CPrintToChat(iClient, "%t", "OpenFrags StatsMatches", iWins, iTop3Wins, iMatches);
+	CPrintToChat(iClient, "%t", "OpenFrags StatsMatches", iWins, iMatches);
 	CPrintToChat(iClient, "%t", "OpenFrags StatsPlaytime", iPlaytimeHoursHigh, iPlaytimeHoursLow);
 	CPrintToChat(iClient, "%t", "OpenFrags StatsKD", iFrags, iDeaths, flKDR);
 	CPrintToChat(iClient, "%t", "OpenFrags StatsMeleeAndPowerupKills", iMeleeKills, iPowerupKills);
@@ -1179,9 +1180,9 @@ char aszLeaderboardPlayerColor[5][12];
 int aiLeaderboardPlayerElo[5];
 
 void PrintTopPlayers(int iClient) {
-	char szQuery[512];
+	iLeaderboardPlayerCount = 0;
 	
-	// only once all the queries have finished the player will get the leaderboard
+	char szQuery[512];
 	Format(szQuery, 512, "SELECT steamid2, name, color, elo FROM stats_duels ORDER BY elo DESC LIMIT 0, 5;");
 	g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopRated, szQuery, iClient);
 }
