@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "d1.0"
+#define PLUGIN_VERSION "d1.1"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/duels/updatefile.txt"
 #define MAX_LEADERBOARD_NAME_LENGTH 32
 #define RATING_COLOR_TOP1 "{mediumpurple}"
@@ -935,14 +935,13 @@ void Callback_PrintPlayerStats_Check(Database hSQL, DBResultSet hResults, const 
 		hDatapack.WriteCell(CloneHandle(hResults));
 
 		SQL_FetchRow(hResults);
-		if(hResults.FetchInt(27) == 0) {
+		if(hResults.FetchInt(26) == 0) {
 			Callback_PrintPlayerStats_Finish(hSQL, view_as<DBResultSet>(INVALID_HANDLE), szErr, hDatapack);
 		} else {
 			char szAuthToUse[32];
 			hResults.FetchString(0, szAuthToUse, 32);
 			char szQuery[512];
 			Format(szQuery, 512, "SELECT * FROM (select ROW_NUMBER() OVER (ORDER BY elo DESC) rating_place, elo, steamid2, name FROM stats_duels) AS gnarp WHERE steamid2 = '%s';", szAuthToUse);
-			LogMessage(szQuery);
 			g_hSQL.Query(Callback_PrintPlayerStats_Finish, szQuery, hDatapack, DBPrio_Normal);
 		}
 	}
@@ -1105,6 +1104,7 @@ void Callback_PrintPlayerElo_Finish(Database hSQL, DBResultSet hNuthin, const ch
 	char szQueriedAuth[32];
 	hDatapack.ReadString(szQueriedAuth, 32);
 	DBResultSet hResults = hDatapack.ReadCell();
+	hResults.FetchRow();
 	
 	char szAuth[32];
 	char szStatOwnerAuth[32];
@@ -1150,7 +1150,7 @@ void PrintPlayerElos(int iClient) {
 		
 		char szAuth[32];
 		GetClientAuthId(i, AuthId_Steam2, szAuth, 32);
-		Format(szQuery, 4096, "%s steamid2='%s' OR", szAuth);
+		Format(szQuery, 4096, "%s steamid2='%s' OR", szQuery, szAuth);
 	}
 	Format(szQuery, strlen(szQuery)-3, "%s", szQuery);
 	Format(szQuery, 4096, "%s ORDER BY elo DESC;", szQuery);
