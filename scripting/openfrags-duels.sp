@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "1.6"
+#define PLUGIN_VERSION "1.6a"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/duels/updatefile.txt"
 #define MAX_LEADERBOARD_NAME_LENGTH 32
 #define RATING_COLOR_TOP1 "{mediumpurple}"
@@ -14,7 +14,7 @@
 #define RATING_COLOR_TOP100 "{snow}"
 #define RATING_COLOR_UNRANKED "{gray}"
 
-#define QUERY_CREATETABLESTATS "CREATE TABLE IF NOT EXISTS `stats` ( \
+#define QUERY_CREATETABLESTATS "CREATE TABLE IF NOT EXISTS `stats_duels` ( \
 												  `steamid2` varchar(32) NOT NULL, \
 												  `name` varchar(64) DEFAULT 'None', \
 												  `color` int(11) DEFAULT 0, \
@@ -46,7 +46,7 @@
 												  `notified` tinyint(1) DEFAULT 0, \
 												  PRIMARY KEY (`steamid2`) \
 												) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;"
-#define QUERY_CREATETABLEBANS "CREATE TABLE `bans` ( \
+#define QUERY_CREATETABLEBANS "CREATE TABLE IF NOT EXISTS `bans` ( \
 												  `steamid2` varchar(32) NOT NULL, \
 												  `name` varchar(64) DEFAULT NULL, \
 												  `is_banned` tinyint(1) DEFAULT NULL, \
@@ -56,7 +56,7 @@
 												  `bannedby` varchar(32) DEFAULT NULL, \
 												  PRIMARY KEY (`steamid2`) \
 												) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;"
-#define QUERY_INSERTPLAYER "INSERT IGNORE INTO stats (steamid2, \
+#define QUERY_INSERTPLAYER "INSERT IGNORE INTO stats_duels (steamid2, \
 												name, \
 												color, \
 												elo, \
@@ -81,7 +81,7 @@
 												from stats_duels) \
 											as rating_place WHERE steamid2 = '%s') \
 										as rating_place \
-									FROM stats_duels \
+									FROM stats_duels_duels \
 									WHERE steamid2 = '%s';"
 									
 #define QUERY_GETELOLEADERBOARD "SELECT \
@@ -89,7 +89,7 @@
 									name, \
 									color, \
 									elo \
-									FROM stats_duels \
+									FROM stats_duels_duels \
 									WHERE steamid2 = '%s' \
 									ORDER BY elo DESC \
 									LIMIT 0, 10;"
@@ -120,7 +120,6 @@ int g_aiPlayerDamageDealtStore[MAXPLAYERS];
 int g_aiPlayerDamageTakenStore[MAXPLAYERS];
 bool g_abPlayerJoinedBeforeHalfway[MAXPLAYERS];
 int g_aiElos[MAXPLAYERS];
-int g_aiDuelers[2];
 bool g_abPlayerNotifiedOfOF[MAXPLAYERS];
 bool g_bRoundGoing = true;
 int g_timeRoundStart = 0;
@@ -131,11 +130,11 @@ int g_nCurrentRoundMutator = 0;
 bool g_abSSGHitDebounce[MAXPLAYERS];
 
 public Plugin myinfo = {
-	name = "Open Frags",
+	name = "OpenFrags-Duels",
 	author = "ratest & Oha",
 	description = "Keeps track of your stats!",
 	version = PLUGIN_VERSION,
-	url = "https://of.ohaa.xyz"
+	url = "https://git.ohaa.xyz/ratest/openfrags/src/branch/duels"
 };
 
 public void OnPluginStart() {
@@ -199,7 +198,7 @@ void Callback_DatabaseConnected(Handle hDriver, Database hSQL, const char[] szEr
 			HookEvent("teamplay_win_panel", Event_RoundEnd);
 			
 			g_hSQL.Query(Callback_None, QUERY_CREATETABLESTATS, 813, DBPrio_High);
-			g_hSQL.Query(Callback_None, QUERY_CREATETABLEBANS, 813, DBPrio_High);
+			g_hSQL.Query(Callback_None, QUERY_CREATETABLEBANS, 814, DBPrio_High);
 
 			LogMessage("Successfully connected to the DB!");
 		}
@@ -422,7 +421,7 @@ void Callback_InitPlayerData_Final(Database hSQL, DBResultSet hResults, const ch
 	
 	int iPlayerColor = GetPlayerColor(iClient);
 	char szQueryUpdatePlayer[256];
-	Format(szQueryUpdatePlayer, 256, "UPDATE stats SET name = '%s', color = %i, join_count = join_count + 1 WHERE steamid2 = '%s'", szClientNameSafe, iPlayerColor, szAuth);
+	Format(szQueryUpdatePlayer, 256, "UPDATE stats_duels SET name = '%s', color = %i, join_count = join_count + 1 WHERE steamid2 = '%s'", szClientNameSafe, iPlayerColor, szAuth);
 	g_hSQL.Query(Callback_None, szQueryUpdatePlayer, 5, DBPrio_Low);
 	
 	OnClientDataInitialized(iClient);
@@ -443,7 +442,7 @@ void IncrementField(int iClient, char[] szField, int iAdd = 1) {
 	GetClientAuthId(iClient, AuthId_Steam2, szAuth, 32);
 	
 	char szQuery[512];
-	Format(szQuery, 512, "UPDATE stats SET \
+	Format(szQuery, 512, "UPDATE stats_duels SET \
 										%s = (%s + %i) \
 										WHERE steamid2 = '%s'", szField, szField, iAdd, szAuth);
 
@@ -466,7 +465,7 @@ void ResetKillstreak(int iClient) {
 	char szQueryUpdate[512];
 	char szMap[64];
 	GetCurrentMap(szMap, 64);
-	Format(szQueryUpdate, 512, "UPDATE stats SET highest_killstreak = CASE WHEN highest_killstreak < %i THEN %i ELSE highest_killstreak END, \
+	Format(szQueryUpdate, 512, "UPDATE stats_duels SET highest_killstreak = CASE WHEN highest_killstreak < %i THEN %i ELSE highest_killstreak END, \
 												highest_killstreak_map = CASE WHEN (highest_killstreak = %i AND highest_killstreak > 0) THEN '%s' ELSE highest_killstreak_map END \
 												WHERE steamid2 = '%s';",
 												iKillstreak, iKillstreak, iKillstreak, szMap, szAuth);
@@ -530,7 +529,7 @@ Action Delayed_NotifyUserOfOpenFrags(Handle hTimer, int iClient) {
 	GetClientAuthId(iClient, AuthId_Steam2, szAuth, 32);
 	
 	char szQueryCheckNotifiedChatAlready[128];
-	Format(szQueryCheckNotifiedChatAlready, 128, "SELECT steamid2, name, notified FROM stats WHERE steamid2 = '%s'", szAuth);
+	Format(szQueryCheckNotifiedChatAlready, 128, "SELECT steamid2, name, notified FROM stats_duels WHERE steamid2 = '%s'", szAuth);
 	g_hSQL.Query(Callback_NotifyUserOfOpenFrags, szQueryCheckNotifiedChatAlready, iClient, DBPrio_High);
 	
 	return Plugin_Handled;
@@ -557,7 +556,7 @@ void Callback_NotifyUserOfOpenFrags(Database hSQL, DBResultSet hResults, const c
 	hResults.FetchString(0, szAuth, 32);
 	
 	char szQuerySetNotified[128];
-	Format(szQuerySetNotified, 128, "UPDATE stats SET notified=1 WHERE steamid2 = '%s'", szAuth);
+	Format(szQuerySetNotified, 128, "UPDATE stats_duels SET notified=1 WHERE steamid2 = '%s'", szAuth);
 	g_hSQL.Query(Callback_None, szQuerySetNotified, 38, DBPrio_Low);
 }
 
@@ -680,7 +679,7 @@ void UpdateStoredStats(int iClient = -1) {
 		GetClientAuthId(iClient, AuthId_Steam2, szAuth, 32);
 		
 		char szUpdateRatesQuery[512];
-		Format(szUpdateRatesQuery, 512, "UPDATE stats SET \
+		Format(szUpdateRatesQuery, 512, "UPDATE stats_duels SET \
 													kdr = (frags / CASE WHEN deaths = 0 THEN 1 ELSE deaths END), \
 													railgun_headshotrate = (railgun_headshots / (CASE WHEN railgun_headshots + railgun_bodyshots + railgun_misses = 0 THEN 1 ELSE railgun_headshots + railgun_bodyshots + railgun_misses END)), \
 													winrate = (wins / CASE WHEN matches = 0 THEN 1 ELSE matches END) \
@@ -840,7 +839,7 @@ void UpdatePlayerElo(int iClient, float flExpectedScore, bool bWon) {
 	
 	g_aiElos[iClient] = RoundToCeil(float(g_aiElos[iClient]) + flDevelopmentFactor*((bWon ? 1.0 : 0.0) - flExpectedScore));
 	char szUpdateEloQuery[256];
-	Format(szUpdateEloQuery, 256, "UPDATE stats SET \
+	Format(szUpdateEloQuery, 256, "UPDATE stats_duels SET \
 													elo = %i \
 													WHERE steamid2='%s';", g_aiElos[iClient], szAuth);
 		
@@ -903,7 +902,7 @@ void PrintPlayerStats(int iClient, int iStatsOwner, char[] szAuthArg = "") {
 	hDatapack.WriteString(szAuthToUse);
 
 	char szQuery[128];
-	Format(szQuery, 128, "SELECT * FROM stats WHERE steamid2 = '%s'", szAuthToUse);
+	Format(szQuery, 128, "SELECT * FROM stats_duels WHERE steamid2 = '%s'", szAuthToUse);
 	g_hSQL.Query(Callback_PrintPlayerStats_Check, szQuery, hDatapack, DBPrio_Normal);
 	
 }
@@ -923,7 +922,7 @@ void Callback_PrintPlayerStats_Check(Database hSQL, DBResultSet hResults, const 
 		hNewDatapack.WriteCell(iClient);
 		hNewDatapack.WriteString(szAuthToUse);
 		
-		Format(szQuery, 128, "SELECT * FROM stats WHERE steamid2 = '%s'", szAuthToUse);
+		Format(szQuery, 128, "SELECT * FROM stats_duels WHERE steamid2 = '%s'", szAuthToUse);
 		g_hSQL.Query(Callback_PrintPlayerStats_Check, szQuery, hNewDatapack, DBPrio_Normal);
 	} else if(hResults.RowCount < 1) {
 		hDatapack.Reset();
@@ -1142,7 +1141,7 @@ void Callback_PrintPlayerElo_Finish(Database hSQL, DBResultSet hNuthin, const ch
 
 void PrintPlayerElos(int iClient) {
 	char szQuery[4096];
-	Format(szQuery, 4096, "SELECT steamid2, name, color, elo FROM stats WHERE ");
+	Format(szQuery, 4096, "SELECT steamid2, name, color, elo FROM stats_duels WHERE ");
 	for(int i = 0; i < MaxClients; ++i) {
 		if(!IsClientInGame(i))
 			continue;
@@ -1183,7 +1182,7 @@ void PrintTopPlayers(int iClient) {
 	char szQuery[512];
 	
 	// only once all the queries have finished the player will get the leaderboard
-	Format(szQuery, 512, "SELECT steamid2, name, color, elo FROM stats ORDER BY elo DESC LIMIT 0, 5;");
+	Format(szQuery, 512, "SELECT steamid2, name, color, elo FROM stats_duels ORDER BY elo DESC LIMIT 0, 5;");
 	g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopRated, szQuery, iClient);
 }
 
@@ -1368,7 +1367,7 @@ Action Command_OptOut(int iClient, int iArgs) {
 	SQL_EscapeString(g_hSQL, szClientName, szClientNameSafe, 64);
 	
 	char szQueryOptOut[512];
-	Format(szQueryOptOut, 512, "DELETE FROM stats WHERE steamid2 = '%s';", szAuth);
+	Format(szQueryOptOut, 512, "DELETE FROM stats_duels WHERE steamid2 = '%s';", szAuth);
 	g_hSQL.Query(Callback_OptOut_RemovedStats, szQueryOptOut, iClient, DBPrio_High);
 
 	Format(szQueryOptOut, 512, "INSERT INTO bans (steamid2, name, is_banned, ban_reason, timestamp, expiration) VALUES ('%s', '%s', 1, 'In-game opt-out', 0, 0);", szAuth, szClientNameSafe);
@@ -1481,7 +1480,7 @@ Action Command_TestIncrementField(int iClient, int iArgs) {
 	strcopy(szField, 64, "damage_dealt");
 	int iAdd = 1;
 	char szQuery[700];
-	Format(szQuery, 700, "UPDATE stats SET \
+	Format(szQuery, 700, "UPDATE stats_duels SET \
 										%s = (%s + %i) \
 										WHERE steamid2 = '%s'", szField, szField, iAdd, szAuth);
 										
