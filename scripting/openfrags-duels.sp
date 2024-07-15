@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "d1.1"
+#define PLUGIN_VERSION "d1.1a"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/duels/updatefile.txt"
 #define MAX_LEADERBOARD_NAME_LENGTH 32
 #define RATING_COLOR_TOP1 "{mediumpurple}"
@@ -197,8 +197,8 @@ void Callback_DatabaseConnected(Handle hDriver, Database hSQL, const char[] szEr
 			HookEvent("teamplay_round_start", Event_RoundStart);
 			HookEvent("teamplay_win_panel", Event_RoundEnd);
 			
-			g_hSQL.Query(Callback_None, QUERY_CREATETABLESTATS, 813, DBPrio_High);
-			g_hSQL.Query(Callback_None, QUERY_CREATETABLEBANS, 814, DBPrio_High);
+			//g_hSQL.Query(Callback_None, QUERY_CREATETABLESTATS, 813, DBPrio_High);
+			//g_hSQL.Query(Callback_None, QUERY_CREATETABLEBANS, 814, DBPrio_High);
 
 			LogMessage("Successfully connected to the DB!");
 		}
@@ -895,6 +895,11 @@ void UpdatePlayerElo(int iClient, float flExpectedScore, bool bWon) {
 }
 
 void Event_RoundEnd(Event event, const char[] szEventName, bool bDontBroadcast) {
+	if(g_iCurrentDuelers[0] > 0)
+		IncrementField(g_iCurrentDuelers[0], "matches");
+	if(g_iCurrentDuelers[1] > 0)
+		IncrementField(g_iCurrentDuelers[1], "matches");
+
 	for(int i = 1; i < MaxClients; ++i) {
 		if(!IsClientInGame(i))
 			continue;
@@ -902,8 +907,6 @@ void Event_RoundEnd(Event event, const char[] szEventName, bool bDontBroadcast) 
 		if(!g_abInitializedClients[i])
 			continue;
 
-		IncrementField(i, "matches");
-		
 		ResetKillstreak(i);
 		UpdateStoredStats(i);
 	}
