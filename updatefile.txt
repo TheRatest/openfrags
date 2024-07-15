@@ -4,13 +4,12 @@
 	{
 		"Version"
 		{
-			"Latest"	"1.5c"
-			"Previous"	"1.5b"
+			"Latest"	"1.5d"
+			"Previous"	"1.5c"
 		}
 		
 		"Notes"	"More info @ openfrags.ohaa.xyz"
-		"Notes"	"Notify bugfix"
-		"Notes"	"/top headshot percentage bugfix"
+		"Notes"	"Fix for when a client disconnects and doesnt get a match recorded"
 	}
 	
 	"Files"

@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "1.5c"
+#define PLUGIN_VERSION "1.5d"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/main/updatefile.txt"
 #define MIN_LEADERBOARD_HEADSHOTS 15
 #define MIN_LEADERBOARD_MATCHES 3
@@ -506,7 +506,7 @@ void Event_PlayerDisconnect(Event event, const char[] szEventName, bool bDontBro
 	char szDisconectReason[128];
 	GetEventString(event, "reason", szDisconectReason, 128);
 	
-	if(g_abPlayerJoinedBeforeHalfway[iClient] && IsRoundHalfwayDone() && g_bRoundGoing && (StrContains(szDisconectReason, "timed out", false) != -1 && StrContains(szDisconectReason, "kicked", false) != -1 && StrContains(szDisconectReason, "connection closing", false) != -1))
+	if(g_abPlayerJoinedBeforeHalfway[iClient] && IsRoundHalfwayDone() && g_bRoundGoing && (StrContains(szDisconectReason, "timed out", false) == -1 && StrContains(szDisconectReason, "kicked", false) == -1 && StrContains(szDisconectReason, "connection closing", false) == -1))
 		IncrementField(iClient, "matches");
 	
 	ResetKillstreak(iClient);
