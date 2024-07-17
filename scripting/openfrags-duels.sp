@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "d1.2"
+#define PLUGIN_VERSION "d1.2a"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/duels/updatefile.txt"
 #define MAX_LEADERBOARD_NAME_LENGTH 32
 #define RATING_COLOR_TOP1 "{mediumpurple}"
@@ -542,6 +542,9 @@ Action Delayed_NotifyUserOfOpenFrags(Handle hTimer, int iClient) {
 
 void Callback_NotifyUserOfOpenFrags(Database hSQL, DBResultSet hResults, const char[] szErr, any iClientUncasted) {
 	int iClient = view_as<int>(iClientUncasted);
+	
+	if(!IsClientInGame(iClient))
+		return Plugin_Handled;
 	
 	if(!IsValidHandle(hSQL) || !IsValidHandle(hResults))
 		return;
