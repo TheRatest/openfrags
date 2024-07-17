@@ -544,7 +544,7 @@ void Callback_NotifyUserOfOpenFrags(Database hSQL, DBResultSet hResults, const c
 	int iClient = view_as<int>(iClientUncasted);
 	
 	if(!IsClientInGame(iClient))
-		return Plugin_Handled;
+		return;
 	
 	if(!IsValidHandle(hSQL) || !IsValidHandle(hResults))
 		return;
