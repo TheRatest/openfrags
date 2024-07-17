@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "d1.1a"
+#define PLUGIN_VERSION "d1.2"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/duels/updatefile.txt"
 #define MAX_LEADERBOARD_NAME_LENGTH 32
 #define RATING_COLOR_TOP1 "{mediumpurple}"
@@ -148,6 +148,10 @@ public void OnPluginStart() {
 	RegConsoleCmd("sm_openfrags_top", Command_ViewTop, "View the top players");
 	RegConsoleCmd("sm_openfrags_leaderboard", Command_ViewTop, "View the top players");
 	RegConsoleCmd("sm_openfrags_optout", Command_OptOut, "Delete all the data stored associated with the caller and permanently opt out of the stat tracking");
+	RegConsoleCmd("sm_openfrags_elo", Command_ViewElo, "View your (or someone else's) Elo");
+	RegConsoleCmd("sm_openfrags_rating", Command_ViewElo, "View your (or someone else's) Elo");
+	RegConsoleCmd("sm_openfrags_elos", Command_ViewElos, "View the current players' Elos");
+	RegConsoleCmd("sm_openfrags_ratings", Command_ViewElos, "View the current players' Elos");
 	RegConsoleCmd("sm_openfrags_eligibility", Command_TestEligibility, "Check for if the server is eligible for stat tracking");
 	
 	RegAdminCmd("sm_openfrags_myscore", Command_MyScore, ADMFLAG_CHAT, "Print your current score/frags");
@@ -549,7 +553,7 @@ void Callback_NotifyUserOfOpenFrags(Database hSQL, DBResultSet hResults, const c
 	bool bNotified = view_as<bool>(hResults.FetchInt(2));
 	
 	if(!bNotified) {
-		CPrintToChat(iClient, "%t %t", "OpenFrags-Duels ChatPrefix", "OpenFrags-Duels Notify");
+		CPrintToChat(iClient, "%t %t", "OpenFrags-Duels ChatPrefix", "OpenFrags-Duels Notify", PLUGIN_VERSION);
 		PrintToConsole(iClient, "[OFD] Available commands:\n/stats to see your stats\n/top to view the leaderboard\n/elos to see the current players' Elos\n/elo to see your Elo\n/optout to completely opt out of the stat tracking");
 	}
 	else {
@@ -648,6 +652,9 @@ Action Delayed_PrintDuelersElos(Handle hTimer) {
 	int iClient1 = -1;
 	int iClient2 = -1;
 	for(int i = 1; i < MaxClients; ++i) {
+		if(!IsClientInGame(i))
+			continue;
+		
 		if(IsPlayerAlive(i)) {
 			if(iClient1 == -1)
 				iClient1 = i;
@@ -1282,15 +1289,15 @@ public Action OnClientSayCommand(int iClient, const char[] szCommand, const char
 		Command_OptOut(iClient, 0);
 		return retval;
 	}
-	if(StrEqual(szChatCommand, "elo", false) && iArgs == 1) {
+	if((StrEqual(szChatCommand, "elo", false) || StrEqual(szChatCommand, "rating", false)) && iArgs == 1) {
 		PrintPlayerElo(iClient, iClient);
 		return retval;
 	}
-	if(StrEqual(szChatCommand, "elos", false)) {
+	if(StrEqual(szChatCommand, "elos", false) && StrEqual(szChatCommand, "ratings", false)) {
 		PrintPlayerElos(iClient);
 		return retval;
 	}
-	if(StrEqual(szChatCommand, "elo", false)) {
+	if(StrEqual(szChatCommand, "elo", false) || StrEqual(szChatCommand, "rating", false)) {
 		int aiTargets[1];
 		char szTarget[64];
 		bool bIsMLPhrase = false;
@@ -1379,6 +1386,45 @@ Action Command_AboutPlugin(int iClient, int iArgs) {
 		CRemoveTags(szAbout, 256);
 		PrintToServer(szAbout);
 	}
+	return Plugin_Handled;
+}
+
+Action Command_ViewElo(int iClient, int iArgs) {
+	if(iArgs == 0)
+		PrintPlayerElo(iClient, iClient);
+	else {
+		char szTargetName[64];
+		GetCmdArg(1, szTargetName, 64)
+		int aiTargets[1];
+		char szTarget[128];
+		bool bIsMLPhrase = false;
+		int iTargetsFound = ProcessTargetString(szTargetName, 0, aiTargets, 1, 0, szTarget, 128, bIsMLPhrase);
+		
+		if(iTargetsFound > 0) {
+			PrintPlayerElo(iClient, aiTargets[0]);
+			return Plugin_Handled;
+		} else {
+			char szAuth[32];
+			GetCmdArg(1, szAuth, 32);
+			if(strlen(szAuth) < 7) {
+				ReplyToCommand(iClient, "[OF] No target found; if you meant to use a SteamID2, you need to use quotes (e.g sm_playerstats_stats \"STEAM_0:1:522065531\")")
+				return Plugin_Handled;
+			}
+			ReplaceString(szAuth, 32, "'", "");
+			ReplaceString(szAuth, 32, ")", "");
+			ReplaceString(szAuth, 32, "\"", "");
+			ReplaceString(szAuth, 32, "\\", "");
+			PrintPlayerElo(iClient, -1, szAuth);
+			return Plugin_Handled;
+		}
+	}
+	
+	return Plugin_Handled;
+}
+
+Action Command_ViewElos(int iClient, int iArgs) {
+	PrintPlayerElos(iClient);
+	
 	return Plugin_Handled;
 }
 

@@ -4,13 +4,12 @@
 	{
 		"Version"
 		{
-			"Latest"	"d1.1a"
-			"Previous"	"d1.1"
+			"Latest"	"d1.2"
+			"Previous"	"d1.1a"
 		}
 		
 		"Notes"	"More info @ github.com/TheRatest/openfrags/tree/duels"
-		"Notes"	"Now doesn't try to create the tables on launch"
-		"Notes"	"Bugfix for when a loser disconnects mid-match"
+		"Notes"	"idk"
 	}
 	
 	"Files"
