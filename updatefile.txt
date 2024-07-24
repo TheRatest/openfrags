@@ -4,12 +4,12 @@
 	{
 		"Version"
 		{
-			"Latest"	"1.5d"
-			"Previous"	"1.5c"
+			"Latest"	"1.5e"
+			"Previous"	"1.5d"
 		}
 		
 		"Notes"	"More info @ openfrags.ohaa.xyz"
-		"Notes"	"Fix for when a client disconnects and doesnt get a match recorded"
+		"Notes"	"Getting ready for 1.6"
 	}
 	
 	"Files"
