@@ -635,7 +635,7 @@ void Event_PlayerDisconnect(Event event, const char[] szEventName, bool bDontBro
 	// TODO 1.6 ragequits
 	//if(g_aiPlayerDeathTime[iClient] + THRESHOLD_RAGEQUIT_TIME > GetTime())
 	//	IncrementField(iClient, "ragequits");
-	//g_aiElos[iClient] = 0;
+	g_aiElos[iClient] = 0;
 	
 	ResetKillstreak(iClient);
 	UpdateStoredStats(iClient);
