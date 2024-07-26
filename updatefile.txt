@@ -4,12 +4,13 @@
 	{
 		"Version"
 		{
-			"Latest"	"1.5e"
-			"Previous"	"1.5d"
+			"Latest"	"1.6"
+			"Previous"	"1.5e"
 		}
 		
 		"Notes"	"More info @ openfrags.ohaa.xyz"
-		"Notes"	"Getting ready for 1.6"
+		"Notes"	"DM Elo!"
+		"Notes"	"Some fixes i think? i don't remember tbh."
 	}
 	
 	"Files"
@@ -17,13 +18,14 @@
 		"Patch"
 		{
 			"Plugin"	"Path_SM/plugins/openfrags.smx"
+			"Plugin"	"Path_SM/translations/openfrags.phrases.txt"
 			
-			"Source"	"Path_SM/scripting/myplugin.sp"
+			"Source"	"Path_SM/scripting/openfrags.sp"
 		}
 		
 		"Plugin"	"Path_SM/plugins/openfrags.smx"
 		"Plugin"	"Path_SM/translations/openfrags.phrases.txt"
 		
-		"Source"	"Path_SM/scripting/myplugin.sp"
+		"Source"	"Path_SM/scripting/openfrags.sp"
 	}
 }

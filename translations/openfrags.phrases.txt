@@ -151,4 +151,28 @@
 		"#format"		"{1:s},{2:s},{3:i},{4:i}"
 		"en"			"{default}Highest Playtime: {2}{1} {default}- {3}.{4} hours"
 	}
+	"OpenFrags-Duels RoundStartElos"
+	{
+		"#format"		"{1:s},{2:s},{3:i},{4:s},{5:s},{6:i}"
+		"en"			"{2}{1} {default}({3}) VS {5}{4} {default}({6})"
+	}
+	"OpenFrags YourElo"
+	{
+		"#format"		"{1:i}"
+		"en"			"Your Deathmatch Elo: {1}"
+	}
+	"OpenFrags PlayerElo"
+	{
+		"#format"		"{1:s},{2:s},{3:i}"
+		"en"			"{2}{1}{default}'s Deathmatch Elo: {1}"
+	}
+	"OpenFrags PlayersElos"
+	{
+		"en"			"Current players' Deathmatch Elos:"
+	}
+	"OpenFrags PlayersElo"
+	{
+		"#format"		"{1:i},{2:s},{3:s},{4:i}"
+		"en"			"{1}. {3}{2} {default}- {4}"
+	}
 }
