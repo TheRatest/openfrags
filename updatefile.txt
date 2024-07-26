@@ -4,26 +4,27 @@
 	{
 		"Version"
 		{
-			"Latest"	"d1.2a"
-			"Previous"	"d1.1a"
+			"Latest"	"d1.3"
+			"Previous"	"d1.2a"
 		}
 		
 		"Notes"	"More info @ github.com/TheRatest/openfrags/tree/duels"
-		"Notes"	"idk"
+		"Notes"	"Customizable development coefficient"
+		"Notes"	"/ratings and /elos fix"
 	}
 	
 	"Files"
 	{
 		"Patch"
 		{
-			"Plugin"	"Path_SM/plugins/openfrags.smx"
+			"Plugin"	"Path_SM/plugins/openfrags_duels.smx"
 			
-			"Source"	"Path_SM/scripting/myplugin.sp"
+			"Source"	"Path_SM/scripting/openfrags_duels.sp"
 		}
 		
-		"Plugin"	"Path_SM/plugins/openfrags.smx"
+		"Plugin"	"Path_SM/plugins/openfrags_duels.smx"
 		"Plugin"	"Path_SM/translations/openfrags.phrases.txt"
 		
-		"Source"	"Path_SM/scripting/myplugin.sp"
+		"Source"	"Path_SM/scripting/openfrags_duels.sp"
 	}
 }

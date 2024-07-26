@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "d1.2a"
+#define PLUGIN_VERSION "d1.3"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/duels/updatefile.txt"
 #define MAX_LEADERBOARD_NAME_LENGTH 32
 #define RATING_COLOR_TOP1 "{mediumpurple}"
@@ -105,6 +105,7 @@ enum {
 };
 
 ConVar g_cvarNotifyElos = null;
+ConVar g_cvarDevelopmentCoefficient = null;
 
 Database g_hSQL;
 
@@ -141,6 +142,7 @@ public void OnPluginStart() {
 	LoadTranslations("openfrags.phrases.txt");
 	
 	g_cvarNotifyElos = CreateConVar("sm_openfrags_announce_elos", "1", "Announce player ELOs each time a round starts", 0, true, 0.0, true, 1.0);
+	g_cvarDevelopmentCoefficient = CreateConVar("sm_openfrags_development_coefficient", "1.0", "Elo development coefficient (higher = bigger elo changes)", 0, true, 0.0, false);
 	
 	RegConsoleCmd("sm_openfrags", Command_AboutPlugin, "Information on OpenFrags-Duels");
 	RegConsoleCmd("sm_openfrags_duels", Command_AboutPlugin, "Information on OpenFrags-Duels");
@@ -886,11 +888,15 @@ void UpdatePlayerElo(int iClient, float flExpectedScore, bool bWon) {
 	char szAuth[32];
 	GetClientAuthId(iClient, AuthId_Steam2, szAuth, 32);
 	
+	float flDevelopmentCoefficient = 1.0;
+	if(IsValidHandle(g_cvarDevelopmentCoefficient))
+		flDevelopmentCoefficient = GetConVarFloat(g_cvarDevelopmentCoefficient);
 	float flDevelopmentFactor = (-g_aiElos[iClient]+600)/33.33333 + 40;
-	if(flDevelopmentFactor > 40.0)
-		flDevelopmentFactor = 40.0;
-	if(flDevelopmentFactor < 10.0)
-		flDevelopmentFactor = 10.0;
+	flDevelopmentFactor *= flDevelopmentCoefficient;
+	if(flDevelopmentFactor > 40.0 * flDevelopmentCoefficient)
+		flDevelopmentFactor = 40.0 * flDevelopmentCoefficient;
+	if(flDevelopmentFactor < 10.0 * flDevelopmentCoefficient)
+		flDevelopmentFactor = 10.0 * flDevelopmentCoefficient;
 	
 	g_aiElos[iClient] = RoundToCeil(float(g_aiElos[iClient]) + flDevelopmentFactor*((bWon ? 1.0 : 0.0) - flExpectedScore));
 	if(g_aiElos[iClient] < 100)
@@ -1296,7 +1302,7 @@ public Action OnClientSayCommand(int iClient, const char[] szCommand, const char
 		PrintPlayerElo(iClient, iClient);
 		return retval;
 	}
-	if(StrEqual(szChatCommand, "elos", false) && StrEqual(szChatCommand, "ratings", false)) {
+	if(StrEqual(szChatCommand, "elos", false) || StrEqual(szChatCommand, "ratings", false)) {
 		PrintPlayerElos(iClient);
 		return retval;
 	}
