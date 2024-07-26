@@ -707,13 +707,15 @@ void UpdateStoredStats(int iClient = -1) {
 		
 		char szUpdateRatesQuery[512];
 		Format(szUpdateRatesQuery, 512, QUERY_UPDATERATES, szAuth)
-		
 		g_hSQL.Query(Callback_None, szUpdateRatesQuery, 420, DBPrio_Low);
 		
 		char szUpdateScoreQuery[512];
 		Format(szUpdateScoreQuery, 512, QUERY_UPDATESCORE, szAuth)
-		
 		g_hSQL.Query(Callback_None, szUpdateScoreQuery, 421, DBPrio_Low);
+		
+		char szCalibrateEloQuery[512];
+		Format(szCalibrateEloQuery, 512, QUERY_CALIBRATEELO, szAuth);
+		g_hSQL.Query(Callback_None, szCalibrateEloQuery, 426, DBPrio_Low);
 	}
 }
 
@@ -940,7 +942,7 @@ void Elo_UpdatePlayerElo(int iClient, int iLeaderboardPlace) {
 	GetClientAuthId(iClient, AuthId_Steam2, szAuth, 32);
 	char szQueryUpdateElo[512];
 	// you gotta be calibrated with the legacy score system first to be able to elo your elo
-	Format(szQueryUpdateElo, 512, "UPDATE `stats` SET `elo`=GREATEST(100, `elo`+%i) WHERE `steamid2`='%s' AND score>0; SELECT `elo` FROM `stats` WHERE `steamid2`='%s'", flEloAdd, szAuth, szAuth);
+	Format(szQueryUpdateElo, 512, "UPDATE `stats` SET `elo`=GREATEST(100, `elo`+%i) WHERE `steamid2`='%s' AND `elo`>0 AND `score`>0; SELECT `elo` FROM `stats` WHERE `steamid2`='%s'", flEloAdd, szAuth, szAuth);
 	g_hSQL.Query(Callback_ReceivedUpdatedElo, szQueryUpdateElo, 392);
 }
 
@@ -1120,6 +1122,7 @@ void Callback_PrintPlayerStats_Finish(Database hSQL, DBResultSet hResultsScorePl
 	char szQueriedAuth[32];
 	hDatapack.ReadString(szQueriedAuth, 32);
 	DBResultSet hResults = hDatapack.ReadCell();
+	CloseHandle(hDatapack);
 	
 	char szAuth[32];
 	char szStatOwnerAuth[32];
@@ -1161,6 +1164,7 @@ void Callback_PrintPlayerStats_Finish(Database hSQL, DBResultSet hResultsScorePl
 	int iDamageDealt = hResults.FetchInt(23);
 	int iDamageTaken = hResults.FetchInt(24);
 	int iScore = hResults.FetchInt(25);
+	CloseHandle(hResults);
 	int iScorePlace = 0;
 	char szScorePlaceColor[32];
 	if(IsValidHandle(hResultsScorePlace)) {
@@ -1420,6 +1424,7 @@ void Callback_PrintPlayerElo_Check(Database hSQL, DBResultSet hResults, const ch
 		hDatapack.WriteCell(hResults);
 		
 		PrintPlayerElo_Finish(hDatapack);
+		CloseHandle(hDatapack);
 	}
 }
 
