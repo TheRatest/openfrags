@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "1.6a"
+#define PLUGIN_VERSION "1.6b"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/main/updatefile.txt"
 #define MIN_LEADERBOARD_HEADSHOTS 15
 #define MIN_LEADERBOARD_MATCHES 3
@@ -943,7 +943,7 @@ void Elo_UpdatePlayerElo(int iClient, int iLeaderboardPlace) {
 	GetClientAuthId(iClient, AuthId_Steam2, szAuth, 32);
 	char szQueryUpdateElo[512];
 	// you gotta be calibrated with the legacy score system first to be able to elo your elo
-	Format(szQueryUpdateElo, 512, "UPDATE `stats` SET `elo`=GREATEST(100, `elo`+%i) WHERE `steamid2`='%s' AND `elo`>0 AND `score`>0", flEloAdd, szAuth);
+	Format(szQueryUpdateElo, 512, "UPDATE `stats` SET `elo`=GREATEST(100, `elo`+%f) WHERE `steamid2`='%s' AND `elo`>0 AND `score`>0", flEloAdd, szAuth);
 	g_hSQL.Query(Callback_UpdatedElo, szQueryUpdateElo, iClient);
 }
 
