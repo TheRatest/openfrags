@@ -4,12 +4,12 @@
 	{
 		"Version"
 		{
-			"Latest"	"1.6a"
-			"Previous"	"1.6"
+			"Latest"	"1.6c"
+			"Previous"	"1.6a"
 		}
 		
 		"Notes"	"More info @ openfrags.ohaa.xyz"
-		"Notes"	"Minor bugfixes"
+		"Notes"	"elo bugs"
 	}
 	
 	"Files"
