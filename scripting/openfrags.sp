@@ -929,7 +929,7 @@ float Elo_GetPlayerExpectedScore(int aiPlayers[MAXPLAYERS], int iClientCount, in
 		if(i == iClientLeaderboardPlace)
 			continue;
 		
-		flNumerator += 1.0 / (1.0 + Pow(10.0, (g_aflElos[aiPlayers[i]] - g_aflElos[aiPlayers[iClientLeaderboardPlace]])/ELO_VALUE_D));
+		flNumerator += 1.0 / (1.0 + Pow(10.0, (g_aflElos[aiPlayers[i]] - g_aflElos[aiPlayers[iClientLeaderboardPlace-1]])/ELO_VALUE_D));
 	}
 	int flDenominator = Elo_GetPermutationCount();
 	return flNumerator / float(flDenominator);
