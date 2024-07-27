@@ -1855,7 +1855,7 @@ Action Command_TestEloUpdateAll(int iClient, int iArgs) {
 }
 
 Action Command_ViewCachedElos(int iClient, int iArgs) {
-	for(int i = 0; i < MaxClients; ++i) {
+	for(int i = 1; i < MaxClients; ++i) {
 		if(!IsClientInGame(i))
 			continue
 		
