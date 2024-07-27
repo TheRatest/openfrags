@@ -4,12 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"	"1.6"
-			"Previous"	"1.5e"
+			"Latest"	"1.6a"
+			"Previous"	"1.6"
 		}
 		
 		"Notes"	"More info @ openfrags.ohaa.xyz"
-		"Notes"	"DM Elo!"
 		"Notes"	"Minor bugfixes"
 	}
 	
@@ -18,7 +17,6 @@
 		"Patch"
 		{
 			"Plugin"	"Path_SM/plugins/openfrags.smx"
-			"Plugin"	"Path_SM/translations/openfrags.phrases.txt"
 			
 			"Source"	"Path_SM/scripting/openfrags.sp"
 		}
