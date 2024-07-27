@@ -933,17 +933,26 @@ float Elo_GetPlayerScore(int aiPlayers[MAXPLAYERS], int iClientCount, int iClien
 	return flNumerator / flDenominator;
 }
 
-void Elo_UpdatePlayerElo(int iClient, int iLeaderboardPlace) {
+void Elo_UpdatePlayerElo(int iClient, int iLeaderboardPlace, bool bDebug = false) {
+	if(bDebug)
+		PrintToServer("Updating elo for client %i, leaderboard place %i", iClient, iLeaderboardPlace+1);
+	
 	if(!g_abInitializedClients[iClient])
 		return;
 	
-	float flEloAdd = ELO_VALUE_K * (g_iLeaderboardPlayers - 1) * (Elo_GetPlayerScore(g_aiLeaderboardClients, g_iLeaderboardPlayers, iLeaderboardPlace) - Elo_GetPlayerExpectedScore(g_aiLeaderboardClients, g_iLeaderboardPlayers, iLeaderboardPlace));
+	float flPlayerScore = Elo_GetPlayerScore(g_aiLeaderboardClients, g_iLeaderboardPlayers, iLeaderboardPlace);
+	float flExpectedScore = Elo_GetPlayerExpectedScore(g_aiLeaderboardClients, g_iLeaderboardPlayers, iLeaderboardPlace);
+	float flEloAdd = ELO_VALUE_K * (g_iLeaderboardPlayers - 1) * (flPlayerScore - flExpectedScore);
+	if(bDebug)
+		PrintToServer("DeltaElo/Expected/Score: %f / %f / %f", flEloAdd, flExpectedScore, flPlayerScore);
 	
 	char szAuth[32];
 	GetClientAuthId(iClient, AuthId_Steam2, szAuth, 32);
 	char szQueryUpdateElo[512];
 	// you gotta be calibrated with the legacy score system first to be able to elo your elo
 	Format(szQueryUpdateElo, 512, "UPDATE `stats` SET `elo`=GREATEST(100, `elo`+%f) WHERE `steamid2`='%s' AND `elo`>0 AND `score`>0", flEloAdd, szAuth);
+	if(bDebug)
+		PrintToServer("Final query: %s", szQueryUpdateElo);
 	g_hSQL.Query(Callback_UpdatedElo, szQueryUpdateElo, iClient);
 }
 
@@ -976,11 +985,19 @@ void Callback_ReceivedUpdatedElo(Database hSQL, DBResultSet hResults, const char
 	g_aflElos[iClient] = hResults.FetchFloat(0);
 }
 
-void Elo_UpdateAll() {
+void Elo_UpdateAll(bool bDebug = false) {
 	int iClientCount = Elo_MakePlayerLeaderboard(g_aiLeaderboardClients, g_aiLeaderboardScores, true);
 	g_iLeaderboardPlayers = iClientCount;
+	if(bDebug) {
+		PrintToServer("Made leaderboard with %i players:", iClientCount);
+		for(int i = 0; i <g_iLeaderboardPlayers; ++i) {
+			char szClientName[64];
+			GetClientName(g_aiLeaderboardClients[i], szClientName, 64);
+			PrintToServer("%i. %i : %s", i+1, g_aiLeaderboardClients[i], szClientName);
+		}
+	}
 	for(int i = 0; i < iClientCount; ++i) {
-		Elo_UpdatePlayerElo(g_aiLeaderboardClients[i], i+1);
+		Elo_UpdatePlayerElo(g_aiLeaderboardClients[i], i+1, bDebug);
 	}
 }
 
