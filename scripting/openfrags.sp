@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "1.6b"
+#define PLUGIN_VERSION "1.6c"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/main/updatefile.txt"
 #define MIN_LEADERBOARD_HEADSHOTS 15
 #define MIN_LEADERBOARD_MATCHES 3
@@ -921,7 +921,7 @@ int Elo_GetPermutationCount() {
 }
 
 float Elo_GetPlayerExpectedScore(int aiPlayers[MAXPLAYERS], int iClientCount, int iClientLeaderboardPlace) {
-	if(!g_abInitializedClients[aiPlayers[iClientLeaderboardPlace]])
+	if(!g_abInitializedClients[aiPlayers[iClientLeaderboardPlace-1]])
 		return 0.0;
 	// exponent function, more weight for the 1st place
 	float flNumerator = 0.0;
@@ -936,10 +936,10 @@ float Elo_GetPlayerExpectedScore(int aiPlayers[MAXPLAYERS], int iClientCount, in
 }
 
 float Elo_GetPlayerScore(int aiPlayers[MAXPLAYERS], int iClientCount, int iClientLeaderboardPlace) {
-	if(!g_abInitializedClients[aiPlayers[iClientLeaderboardPlace]])
+	if(!g_abInitializedClients[aiPlayers[iClientLeaderboardPlace-1]])
 		return 0.0;
 	if(iClientCount == 2) {
-		return iClientLeaderboardPlace == 0 ? 1.0 : 0.0;
+		return iClientLeaderboardPlace == 1 ? 1.0 : 0.0;
 	}
 	const float flBase = 2.0;
 	float flNumerator = Pow(flBase, float(iClientCount - iClientLeaderboardPlace)) - 1;
@@ -952,7 +952,7 @@ float Elo_GetPlayerScore(int aiPlayers[MAXPLAYERS], int iClientCount, int iClien
 
 void Elo_UpdatePlayerElo(int iClient, int iLeaderboardPlace, bool bDebug = false) {
 	if(bDebug)
-		PrintToServer("Updating elo for client %i, leaderboard place %i", iClient, iLeaderboardPlace+1);
+		PrintToServer("Updating elo for client %i, leaderboard place %i", iClient, iLeaderboardPlace);
 	
 	if(!g_abInitializedClients[iClient])
 		return;
