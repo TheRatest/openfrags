@@ -197,6 +197,7 @@ public void OnPluginStart() {
 
 	RegAdminCmd("sm_openfrags_test_query", Command_TestIncrementField, ADMFLAG_CONVARS, "Run a test query to see if the plugin works. Should only be ran by a user and not the server!");
 	RegAdminCmd("sm_openfrags_test_elo", Command_TestEloUpdateAll, ADMFLAG_CONVARS, "Update everyone's DM elo as if the round ended");
+	RegAdminCmd("sm_openfrags_cached_elos", Command_ViewCachedElos, ADMFLAG_CONVARS, "View the cached elos");
 
 	SQL_TConnect(Callback_DatabaseConnected, "openfrags");
 	
@@ -872,19 +873,35 @@ int Sort_CompareByFrags(int elem1, int elem2, const int[] array, Handle hndl) {
 	return iDiff;
 }
 
-int Elo_MakePlayerLeaderboard(int aiPlayers[MAXPLAYERS], int aiScores[MAXPLAYERS], bool bSort = true) {
+int Elo_MakePlayerLeaderboard(int aiPlayers[MAXPLAYERS], int aiScores[MAXPLAYERS], bool bSort = true, bool bDebug = false) {
 	int iClientCount = 0;
 	for(int i = 1; i < MaxClients; ++i) {
-		if(!IsClientInGame(i))
+		PrintToServer("Checking client %i", i);
+		if(!IsClientInGame(i)) {
+			if(bDebug)
+				PrintToServer("Client %i is not in game, skipping", i);
 			continue;
-		if(IsFakeClient(i))
+		}
+		if(IsFakeClient(i)) {
+			if(bDebug)
+				PrintToServer("Client %i is fake, skipping", i);
 			continue;
-		if(!g_abInitializedClients[i])
+		}
+		if(!g_abInitializedClients[i]) {
+			if(bDebug)
+				PrintToServer("Client %i is not initialized, skipping", i);
 			continue;
-		if(!IsPlayerActive(i))
+		}
+		if(!IsPlayerActive(i)) {
+			if(bDebug)
+				PrintToServer("Client %i is not active, skipping", i);
 			continue;
-		if(g_aflElos[i] <= 99.9)
+		}
+		if(g_aflElos[i] <= 99.9) {
+			if(bDebug)
+				PrintToServer("Client %i has below 100 elo, skipping", i);
 			continue;
+		}
 		
 		aiPlayers[iClientCount] = i;
 		iClientCount++;
@@ -986,7 +1003,7 @@ void Callback_ReceivedUpdatedElo(Database hSQL, DBResultSet hResults, const char
 }
 
 void Elo_UpdateAll(bool bDebug = false) {
-	int iClientCount = Elo_MakePlayerLeaderboard(g_aiLeaderboardClients, g_aiLeaderboardScores, true);
+	int iClientCount = Elo_MakePlayerLeaderboard(g_aiLeaderboardClients, g_aiLeaderboardScores, true, bDebug);
 	g_iLeaderboardPlayers = iClientCount;
 	if(bDebug) {
 		PrintToServer("Made leaderboard with %i players:", iClientCount);
@@ -1834,6 +1851,18 @@ Action Command_TestEloUpdateAll(int iClient, int iArgs) {
 		return Plugin_Handled;
 	}
 	Elo_UpdateAll(true);
+	return Plugin_Handled;
+}
+
+Action Command_ViewCachedElos(int iClient, int iArgs) {
+	for(int i = 0; i < MaxClients; ++i) {
+		if(!IsClientInGame(i))
+			continue
+		
+		char szName[64];
+		GetClientName(i, szName, 64);
+		ReplyToCommand(iClient, "%i. %s: %f", i, szName, g_aflElos[i]);
+	}
 	return Plugin_Handled;
 }
 
