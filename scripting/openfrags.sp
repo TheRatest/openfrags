@@ -1833,7 +1833,7 @@ Action Command_TestEloUpdateAll(int iClient, int iArgs) {
 		ReplyToCommand(iClient, "[OF] This command can't be run on a duel server");
 		return Plugin_Handled;
 	}
-	Elo_UpdateAll();
+	Elo_UpdateAll(true);
 	return Plugin_Handled;
 }
 
