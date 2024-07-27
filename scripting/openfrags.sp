@@ -948,13 +948,17 @@ void Elo_UpdatePlayerElo(int iClient, int iLeaderboardPlace) {
 }
 
 void Callback_UpdatedElo(Database hSQL, DBResultSet hResults, const char[] szErr, any iClientUncasted) {
+	if(!IsValidHandle(hResults) || strlen(szErr) > 0) {
+		LogError("<!> Couldn't update elo for client %i: %s", szErr, iClientUncasted);
+		return;
+	}
 	int iClient = view_as<int>(iClientUncasted);
 	char szAuth[32];
 	GetClientAuthId(iClient, AuthId_Steam2, szAuth, 32);
 	char szQueryUpdateElo[512];
 	// you gotta be calibrated with the legacy score system first to be able to elo your elo
 	Format(szQueryUpdateElo, 512, "SELECT `elo` FROM `stats` WHERE `steamid2`='%s'", szAuth);
-	g_hSQL.Query(Callback_ReceivedUpdatedElo, szQueryUpdateElo, 392);
+	g_hSQL.Query(Callback_ReceivedUpdatedElo, szQueryUpdateElo, iClient);
 	
 }
 
@@ -976,7 +980,7 @@ void Elo_UpdateAll() {
 	int iClientCount = Elo_MakePlayerLeaderboard(g_aiLeaderboardClients, g_aiLeaderboardScores, true);
 	g_iLeaderboardPlayers = iClientCount;
 	for(int i = 0; i < iClientCount; ++i) {
-		Elo_UpdatePlayerElo(i, i+1);
+		Elo_UpdatePlayerElo(g_aiLeaderboardClients[i], i+1);
 	}
 }
 
