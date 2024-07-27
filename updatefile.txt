@@ -10,7 +10,7 @@
 		
 		"Notes"	"More info @ openfrags.ohaa.xyz"
 		"Notes"	"DM Elo!"
-		"Notes"	"Some fixes i think? i don't remember tbh."
+		"Notes"	"Minor bugfixes"
 	}
 	
 	"Files"

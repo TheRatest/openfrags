@@ -524,7 +524,7 @@ void ResetKillstreak(int iClient) {
 		GetConVarString(cvarHostname, szHostname, 64);
 	else
 		GetClientName(0, szHostname, 64);
-	Format(szQueryUpdate, 512, QUERY_UPDATEKILLSTREAK, iKillstreak, iKillstreak, iKillstreak, szMap, szHostname, szAuth);
+	Format(szQueryUpdate, 512, QUERY_UPDATEKILLSTREAK, iKillstreak, iKillstreak, iKillstreak, szMap, iKillstreak, szHostname, szAuth);
 
 	SQL_TQuery(g_hSQL, Callback_None, szQueryUpdate, 1);
 }
