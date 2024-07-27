@@ -50,7 +50,7 @@
 											+ 5 * pow(frags, 1/3) \
 											+ 100 * least(2*(railgun_headshotrate*58/25-0.08), 1) \
 											- 100 * ((1-pow(winrate, 1/4))/kdr*5-0.65) \
-											, 1) \
+											, 100) \
 										WHERE steamid2='%s' AND frags>=100 AND highest_killstreak>=1 AND kdr>0 AND playtime>=3600 AND matches>=2;"
 
 #define QUERY_CALIBRATEELO "UPDATE stats SET \
@@ -196,6 +196,7 @@ public void OnPluginStart() {
 	RegConsoleCmd("sm_openfrags_eligibility", Command_TestEligibility, "Check for if the server is eligible for stat tracking");
 
 	RegAdminCmd("sm_openfrags_test_query", Command_TestIncrementField, ADMFLAG_CONVARS, "Run a test query to see if the plugin works. Should only be ran by a user and not the server!");
+	RegAdminCmd("sm_openfrags_test_elo", Command_TestEloUpdateAll, ADMFLAG_CONVARS, "Update everyone's DM elo as if the round ended");
 
 	SQL_TConnect(Callback_DatabaseConnected, "openfrags");
 	
@@ -1788,6 +1789,19 @@ Action Command_TestEligibility(int iClient, int iArgs) {
 	if(bEnoughPlayers && bMutator && bCheats && !bWaitingForPlayers && g_bRoundGoing)
 		ReplyToCommand(iClient, "[OF] This server is eligible for stat tracking! (%i)", IsServerEligibleForStats());
 		
+	return Plugin_Handled;
+}
+
+Action Command_TestEloUpdateAll(int iClient, int iArgs) {
+	if(!IsServerEligibleForStats()) {
+		ReplyToCommand(iClient, "[OF] This command can't be run on a non-eligible server");
+		return Plugin_Handled;
+	}
+	if(g_bDuels) {
+		ReplyToCommand(iClient, "[OF] This command can't be run on a duel server");
+		return Plugin_Handled;
+	}
+	Elo_UpdateAll();
 	return Plugin_Handled;
 }
 
