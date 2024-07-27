@@ -923,9 +923,6 @@ int Elo_GetPermutationCount() {
 float Elo_GetPlayerExpectedScore(int aiPlayers[MAXPLAYERS], int iClientCount, int iClientLeaderboardPlace) {
 	if(!g_abInitializedClients[aiPlayers[iClientLeaderboardPlace]])
 		return 0.0;
-	if(iClientCount == 2) {
-		return iClientLeaderboardPlace == 0 ? 1.0 : 0.0;
-	}
 	// exponent function, more weight for the 1st place
 	float flNumerator = 0.0;
 	for(int i = 0; i < iClientCount; ++i) {
@@ -941,6 +938,9 @@ float Elo_GetPlayerExpectedScore(int aiPlayers[MAXPLAYERS], int iClientCount, in
 float Elo_GetPlayerScore(int aiPlayers[MAXPLAYERS], int iClientCount, int iClientLeaderboardPlace) {
 	if(!g_abInitializedClients[aiPlayers[iClientLeaderboardPlace]])
 		return 0.0;
+	if(iClientCount == 2) {
+		return iClientLeaderboardPlace == 0 ? 1.0 : 0.0;
+	}
 	const float flBase = 2.0;
 	float flNumerator = Pow(flBase, float(iClientCount - iClientLeaderboardPlace)) - 1;
 	float flDenominator = 0.0;
