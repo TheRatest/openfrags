@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "2.0a"
+#define PLUGIN_VERSION "2.0b"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/main/updatefile.txt"
 #define MIN_LEADERBOARD_HEADSHOTS 15
 #define MIN_LEADERBOARD_SCORE 1000
@@ -1100,7 +1100,7 @@ void Elo_UpdatePlayerElo(int iClient, int iLeaderboardPlace, bool bDebug = false
 	GetClientAuthId(iClient, AuthId_Steam2, szAuth, 32);
 	char szQueryUpdateElo[512];
 	// you gotta be calibrated with the legacy score system first to be able to elo your elo
-	Format(szQueryUpdateElo, 512, "UPDATE `%s` SET `elo`=GREATEST(100, `elo`+%f) WHERE `steamid2`='%s' AND `elo`>0 AND `score`>0", g_szTable, flEloAdd, szAuth);
+	Format(szQueryUpdateElo, 512, "UPDATE `%s` SET `elo`=GREATEST(100, `elo`+%f) WHERE `steamid2`='%s' AND `elo`>0", g_szTable, flEloAdd, szAuth);
 	if(bDebug)
 		PrintToServer("Final query: %s", szQueryUpdateElo);
 	g_hSQL.Query(Callback_UpdatedElo, szQueryUpdateElo, iClient);
@@ -2026,7 +2026,17 @@ Action Command_TestEloUpdateAll(int iClient, int iArgs) {
 		ReplyToCommand(iClient, "[OF] This command can't be run on a non-eligible server");
 		return Plugin_Handled;
 	}
-	Elo_UpdateAll(true);
+	if(!g_bDuels)
+		Elo_UpdateAll(true);
+	else {
+		g_iLeaderboardPlayers = 2;
+		g_aiLeaderboardClients[0] = iWinner;
+		g_aiLeaderboardClients[1] = iLoser;
+		g_aiLeaderboardScores[0] = GetPlayerFrags(iWinner);
+		g_aiLeaderboardScores[1] = GetPlayerFrags(iLoser);
+		Elo_UpdatePlayerElo(iWinner, 1, true);
+		Elo_UpdatePlayerElo(iLoser, 2, true);
+	}
 	return Plugin_Handled;
 }
 
