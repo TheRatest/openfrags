@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "2.0c"
+#define PLUGIN_VERSION "2.0d"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/main/updatefile.txt"
 #define MIN_LEADERBOARD_HEADSHOTS 15
 #define MIN_LEADERBOARD_SCORE 1000
@@ -1431,10 +1431,10 @@ void PrintTopPlayers(int iClient) {
 	Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `railgun_headshotrate`, `railgun_headshots`, `railgun_bodyshots`, `railgun_misses` FROM `%s` WHERE `railgun_headshots`>=%i AND `score`>=%i ORDER BY `railgun_headshotrate` DESC;", g_szTable, MIN_LEADERBOARD_HEADSHOTS, MIN_LEADERBOARD_SCORE);
 	g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopHeadshotter, szQuery, iClient);
 
-	Format(szQuery, 512, "SELECT `steamid2`, `name, `color`, `highest_killstreak`, `highest_killstreak_map`, `highest_killstreak_server` FROM `%s` WHERE (`highest_killstreak` = (SELECT MAX(`highest_killstreak`) FROM `%s`)) AND `score`>= %i ORDER BY `highest_killstreak` DESC;", g_szTable, g_szTable, MIN_LEADERBOARD_SCORE);
+	Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `highest_killstreak`, `highest_killstreak_map`, `highest_killstreak_server` FROM `%s` WHERE (`highest_killstreak` = (SELECT MAX(`highest_killstreak`) FROM `%s`)) AND `score`>= %i ORDER BY `highest_killstreak` DESC;", g_szTable, g_szTable, MIN_LEADERBOARD_SCORE);
 	g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopKillstreaker, szQuery, iClient);
 	
-	Format(szQuery, 512, "SELECT `steamid2`, `name, `color`, `playtime` FROM `%s` WHERE (`playtime` = (SELECT MAX(`playtime`) FROM `%s`)) AND `score`>= %i ORDER BY `playtime` DESC;", g_szTable, g_szTable, MIN_LEADERBOARD_SCORE);
+	Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `playtime` FROM `%s` WHERE (`playtime` = (SELECT MAX(`playtime`) FROM `%s`)) AND `score`>= %i ORDER BY `playtime` DESC;", g_szTable, g_szTable, MIN_LEADERBOARD_SCORE);
 	g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopPlaytimer, szQuery, iClient);
 }
 
