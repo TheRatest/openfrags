@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "2.0b"
+#define PLUGIN_VERSION "2.0c"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/main/updatefile.txt"
 #define MIN_LEADERBOARD_HEADSHOTS 15
 #define MIN_LEADERBOARD_SCORE 1000
@@ -1431,10 +1431,10 @@ void PrintTopPlayers(int iClient) {
 	Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `railgun_headshotrate`, `railgun_headshots`, `railgun_bodyshots`, `railgun_misses` FROM `%s` WHERE `railgun_headshots`>=%i AND `score`>=%i ORDER BY `railgun_headshotrate` DESC;", g_szTable, MIN_LEADERBOARD_HEADSHOTS, MIN_LEADERBOARD_SCORE);
 	g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopHeadshotter, szQuery, iClient);
 
-	Format(szQuery, 512, "SELECT `steamid2, `name, `color`, `highest_killstreak`, `highest_killstreak_map`, `highest_killstreak_server` FROM `%s` WHERE (`highest_killstreak` = (SELECT MAX(`highest_killstreak`) FROM `%s`)) AND `score`>= %i ORDER BY `highest_killstreak` DESC;", g_szTable, g_szTable, MIN_LEADERBOARD_SCORE);
+	Format(szQuery, 512, "SELECT `steamid2`, `name, `color`, `highest_killstreak`, `highest_killstreak_map`, `highest_killstreak_server` FROM `%s` WHERE (`highest_killstreak` = (SELECT MAX(`highest_killstreak`) FROM `%s`)) AND `score`>= %i ORDER BY `highest_killstreak` DESC;", g_szTable, g_szTable, MIN_LEADERBOARD_SCORE);
 	g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopKillstreaker, szQuery, iClient);
 	
-	Format(szQuery, 512, "SELECT `steamid2, `name, `color`, `playtime` FROM `%s` WHERE (`playtime` = (SELECT MAX(`playtime`) FROM `%s`)) AND `score`>= %i ORDER BY `playtime` DESC;", g_szTable, g_szTable, MIN_LEADERBOARD_SCORE);
+	Format(szQuery, 512, "SELECT `steamid2`, `name, `color`, `playtime` FROM `%s` WHERE (`playtime` = (SELECT MAX(`playtime`) FROM `%s`)) AND `score`>= %i ORDER BY `playtime` DESC;", g_szTable, g_szTable, MIN_LEADERBOARD_SCORE);
 	g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopPlaytimer, szQuery, iClient);
 }
 
@@ -1710,7 +1710,7 @@ void Callback_PrintPlayerElos_Finish(Database hSQL, DBResultSet hResults, const 
 	if(strlen(szErr) > 0)
 		LogError("An error occured while querying for current player Elos: %s", szErr);
 	
-	CPrintToChat(iClient, "%t %t", "OpenFrags ChatPrefix", "OpenFrags-Duels PlayersElos");
+	CPrintToChat(iClient, "%t %t", "OpenFrags ChatPrefix", g_bDuels ? "OpenFrags-Duels PlayersElos" : "OpenFrags PlayersElos");
 	for(int i = 0; i < hResults.RowCount; ++i) {
 		hResults.FetchRow();
 		char szName[64];
@@ -1718,7 +1718,7 @@ void Callback_PrintPlayerElos_Finish(Database hSQL, DBResultSet hResults, const 
 		char szColor[12];
 		ColorIntToHex(hResults.FetchInt(2), szColor, 12);
 		int iElo = hResults.FetchInt(3);
-		CPrintToChat(iClient, "%t", "OpenFrags-Duels PlayersElo", i+1, szName, szColor, iElo);
+		CPrintToChat(iClient, "%t", g_bDuels ? "OpenFrags-Duels PlayersElo" : "OpenFrags PlayersElo", i+1, szName, szColor, iElo);
 	}
 }
 

@@ -4,7 +4,7 @@
 	{
 		"Version"
 		{
-			"Latest"	"2.0b"
+			"Latest"	"2.0c"
 			"Previous"	"1.6c"
 		}
 		
@@ -14,6 +14,7 @@
 		"Notes"	"re-ordered some translation phrases"
 		"Notes"	"added aliases for chat comands"
 		"Notes"	"hotfixes for elo shit"
+		"Notes"	"MORE hotfixes. we love those"
 	}
 	
 	"Files"
