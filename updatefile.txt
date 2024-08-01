@@ -4,7 +4,7 @@
 	{
 		"Version"
 		{
-			"Latest"	"2.0a"
+			"Latest"	"2.0b"
 			"Previous"	"1.6c"
 		}
 		
@@ -13,6 +13,7 @@
 		"Notes"	"does not count weapon stats without the openfortress-tools plugin anymore"
 		"Notes"	"re-ordered some translation phrases"
 		"Notes"	"added aliases for chat comands"
+		"Notes"	"hotfixes for elo shit"
 	}
 	
 	"Files"
