@@ -1,6 +1,12 @@
 # About
 OpenFrags is a SourceMod plugin for [Open Fortress](https://openfortress.fun) that allows cross-server stat tracking and viewing it using fancy web pages and chat commands  
+Currently works with Deathmatch and Duel  
 More info at http://openfrags.ohaa.xyz
+
+#### Console variables:
+```
+sm_openfrags_announce_elos [0 or 1] (Default: 1) - Announce player ELOs each time a round starts
+```
 
 #### Server commands:
 ```
@@ -17,10 +23,10 @@ sm_openfrags_cached_elos (admin only) - View cached elos for debugging
 #### Chat commands:
 ```
 !openfrags
-!top
+!top / !leaderboard
 !stats [player name/steamid2]
-!elo [player name/steamid2]
-!elos
+!elo [player name/steamid2] / !rating [player name/steamid2]
+!elos / !ratings
 ```
 
 # Installation:

@@ -151,11 +151,6 @@
 		"#format"		"{1:s},{2:s},{3:i},{4:i}"
 		"en"			"{default}Highest Playtime: {2}{1} {default}- {3}.{4} hours"
 	}
-	"OpenFrags-Duels RoundStartElos"
-	{
-		"#format"		"{1:s},{2:s},{3:i},{4:s},{5:s},{6:i}"
-		"en"			"{2}{1} {default}({3}) VS {5}{4} {default}({6})"
-	}
 	"OpenFrags YourElo"
 	{
 		"#format"		"{1:i}"
@@ -171,6 +166,44 @@
 		"en"			"Current players' Deathmatch Elos:"
 	}
 	"OpenFrags PlayersElo"
+	{
+		"#format"		"{1:i},{2:s},{3:s},{4:i}"
+		"en"			"{1}. {3}{2} {default}- {4}"
+	}
+	"OpenFrags-Duels RoundStartElos"
+	{
+		"#format"		"{1:s},{2:s},{3:i},{4:s},{5:s},{6:i}"
+		"en"			"{2}{1} {default}({3}) VS {5}{4} {default}({6})"
+	}
+	"OpenFrags-Duels YourElo"
+	{
+		"#format"		"{1:i}"
+		"en"			"Your Duel Elo: {1}"
+	}
+	"OpenFrags-Duels PlayerElo"
+	{
+		"#format"		"{1:s},{2:s},{3:i}"
+		"en"			"{2}{1}{default}'s Duel Elo: {1}"
+	}
+	"OpenFrags-Duels StatsMatches"
+	{
+		"#format"		"{1:i},{2:i}"
+		"en"			"Wins/Matches: {1}/{2}"
+	}
+	"OpenFrags-Duels PlayersElos"
+	{
+		"en"			"Current players' Duel Elos:"
+	}
+	"OpenFrags-Duels PlayersElo"
+	{
+		"#format"		"{1:i},{2:s},{3:s},{4:i}"
+		"en"			"{1}. {3}{2} {default}- {4}"
+	}
+	"OpenFrags-Duels Leaderboard"
+	{
+		"en"			"Duel Elo Leaderboard:"
+	}
+	"OpenFrags-Duels LeaderboardPlayer"
 	{
 		"#format"		"{1:i},{2:s},{3:s},{4:i}"
 		"en"			"{1}. {3}{2} {default}- {4}"

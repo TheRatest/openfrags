@@ -4,12 +4,15 @@
 	{
 		"Version"
 		{
-			"Latest"	"1.6c"
-			"Previous"	"1.6a"
+			"Latest"	"2.0"
+			"Previous"	"1.6c"
 		}
 		
-		"Notes"	"More info @ openfrags.ohaa.xyz"
-		"Notes"	"elo bugs"
+		"Notes"	"soo much stuff you can't even imagine!"
+		"Notes"	"now supports duel!! (with a possibility to support more gamemodes later on)"
+		"Notes"	"does not count weapon stats without the openfortress-tools plugin anymore"
+		"Notes"	"re-ordered some translation phrases"
+		"Notes"	"added aliases for chat comands"
 	}
 	
 	"Files"
@@ -17,6 +20,7 @@
 		"Patch"
 		{
 			"Plugin"	"Path_SM/plugins/openfrags.smx"
+			"Plugin"	"Path_SM/translations/openfrags.phrases.txt"
 			
 			"Source"	"Path_SM/scripting/openfrags.sp"
 		}
