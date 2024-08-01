@@ -2029,13 +2029,13 @@ Action Command_TestEloUpdateAll(int iClient, int iArgs) {
 	if(!g_bDuels)
 		Elo_UpdateAll(true);
 	else {
-		g_iLeaderboardPlayers = 2;
-		g_aiLeaderboardClients[0] = iWinner;
-		g_aiLeaderboardClients[1] = iLoser;
-		g_aiLeaderboardScores[0] = GetPlayerFrags(iWinner);
-		g_aiLeaderboardScores[1] = GetPlayerFrags(iLoser);
-		Elo_UpdatePlayerElo(iWinner, 1, true);
-		Elo_UpdatePlayerElo(iLoser, 2, true);
+		if(g_aiCurrentDuelers[0] < 1 || g_aiCurrentDuelers[1] < 1) {
+			ReplyToCommand(iClient, "[OF] Couldn't find the duelers to update their Elos");
+			return Plugin_Handled;
+		}
+		int iWinner = GetPlayerFrags(g_aiCurrentDuelers[0]) > GetPlayerFrags(g_aiCurrentDuelers[1]) ? g_aiCurrentDuelers[0] : g_aiCurrentDuelers[1];
+		int iLoser = GetPlayerFrags(g_aiCurrentDuelers[0]) > GetPlayerFrags(g_aiCurrentDuelers[1]) ? g_aiCurrentDuelers[1] : g_aiCurrentDuelers[0];
+		Elo_UpdateDuels(iWinner, iLoser);
 	}
 	return Plugin_Handled;
 }
