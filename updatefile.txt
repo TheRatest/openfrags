@@ -4,7 +4,7 @@
 	{
 		"Version"
 		{
-			"Latest"	"2.0"
+			"Latest"	"2.0a"
 			"Previous"	"1.6c"
 		}
 		

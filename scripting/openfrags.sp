@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "2.0"
+#define PLUGIN_VERSION "2.0a"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/main/updatefile.txt"
 #define MIN_LEADERBOARD_HEADSHOTS 15
 #define MIN_LEADERBOARD_SCORE 1000
@@ -2024,10 +2024,6 @@ Action Command_TestEligibility(int iClient, int iArgs) {
 Action Command_TestEloUpdateAll(int iClient, int iArgs) {
 	if(!IsServerEligibleForStats()) {
 		ReplyToCommand(iClient, "[OF] This command can't be run on a non-eligible server");
-		return Plugin_Handled;
-	}
-	if(g_bDuels) {
-		ReplyToCommand(iClient, "[OF] This command can't be run on a duel server");
 		return Plugin_Handled;
 	}
 	Elo_UpdateAll(true);
