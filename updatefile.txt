@@ -4,8 +4,8 @@
 	{
 		"Version"
 		{
-			"Latest"	"2.0d"
-			"Previous"	"1.6c"
+			"Latest"	"2.0e"
+			"Previous"	"2.0d"
 		}
 		
 		"Notes"	"soo much stuff you can't even imagine!"
@@ -15,6 +15,7 @@
 		"Notes"	"added aliases for chat comands"
 		"Notes"	"hotfixes for elo shit"
 		"Notes"	"MORE hotfixes. we love those"
+		"Notes"	"killstreak fixes"
 	}
 	
 	"Files"

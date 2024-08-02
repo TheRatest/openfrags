@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "2.0d"
+#define PLUGIN_VERSION "2.0e"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/main/updatefile.txt"
 #define MIN_LEADERBOARD_HEADSHOTS 15
 #define MIN_LEADERBOARD_SCORE 1000
@@ -41,10 +41,10 @@
 										WHERE steamid2='%s';"
 */
 
-#define QUERY_UPDATEKILLSTREAK "UPDATE `%s` SET `highest_killstreak` = CASE WHEN `highest_killstreak` < %i THEN %i ELSE `highest_killstreak` END, \
-												`highest_killstreak_map` = CASE WHEN (`highest_killstreak` = %i AND `highest_killstreak` > 0) THEN '%s' ELSE `highest_killstreak_map` END, \
-												`highest_killstreak_server` = CASE WHEN (`highest_killstreak` = %i AND `highest_killstreak` > 0) THEN '%s' ELSE `highest_killstreak_server` END \
-											 WHERE steamid2 = '%s';"
+#define QUERY_UPDATEKILLSTREAK "UPDATE `%s` SET `highest_killstreak` = %i, \
+												`highest_killstreak_map` = '%s', \
+												`highest_killstreak_server` = '%s' \
+											 WHERE steamid2 = '%s'; AND `highest_killstreak` <= %i AND `highest_killstreak` > 0"
 
 #define QUERY_UPDATESCORE "UPDATE `%s` SET \
 											score = greatest(1000 \
@@ -588,7 +588,6 @@ void ResetKillstreak(int iClient) {
 	char szAuth[32];
 	GetClientAuthId(iClient, AuthId_Steam2, szAuth, 32);
 	
-	char szQueryUpdate[512];
 	char szMap[64];
 	char szHostname[64];
 	GetCurrentMap(szMap, 64);
@@ -597,9 +596,11 @@ void ResetKillstreak(int iClient) {
 		GetConVarString(cvarHostname, szHostname, 64);
 	else
 		GetClientName(0, szHostname, 64);
-	Format(szQueryUpdate, 512, QUERY_UPDATEKILLSTREAK, g_szTable, iKillstreak, iKillstreak, iKillstreak, szMap, iKillstreak, szHostname, szAuth);
+	
+	char szQueryUpdateKillstreak[1024];
+	Format(szQueryUpdateKillstreak, 1024, QUERY_UPDATEKILLSTREAK, g_szTable, iKillstreak, szMap, szHostname, szAuth, iKillstreak);
 
-	SQL_TQuery(g_hSQL, Callback_None, szQueryUpdate, 1);
+	g_hSQL.Query(Callback_None, szQueryUpdateKillstreak, 1);
 }
 
 // for threaded fast queries
@@ -927,9 +928,6 @@ void Event_PlayerDeath(Event event, const char[] szEventName, bool bDontBroadcas
 	int iVictim = GetClientOfUserId(iVictimId);
 	int iClient = GetClientOfUserId(iAttackerId);
 	
-	if((!g_abInitializedClients[iVictim] || !g_abInitializedClients[iClient]) && !IsFakeClient(iVictim))
-		return;
-	
 	char szWeapon[128];
 	GetEventString(event, "weapon", szWeapon, 128);
 	
@@ -937,6 +935,7 @@ void Event_PlayerDeath(Event event, const char[] szEventName, bool bDontBroadcas
 	g_aiPlayerDeathTime[iVictim] = GetTime();
 	ResetKillstreak(iVictim);
 	g_abPlayerDied[iVictim] = true;
+	
 	if(iVictim != iClient) {
 		IncrementField(iClient, "frags");
 		
