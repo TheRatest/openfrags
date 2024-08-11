@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "2.0e"
+#define PLUGIN_VERSION "2.0f"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/main/updatefile.txt"
 #define MIN_LEADERBOARD_HEADSHOTS 15
 #define MIN_LEADERBOARD_SCORE 1000
@@ -15,7 +15,8 @@
 #define RATING_COLOR_TOP10 "{immortal}"
 #define RATING_COLOR_TOP100 "{snow}"
 #define RATING_COLOR_UNRANKED "{gray}"
-#define THRESHOLD_RAGEQUIT_TIME 4
+#define THRESHOLD_RAGEQUIT_TIME 3
+#define LIMIT_STORED_DEATHS 64
 #define ELO_VALUE_D 400.0
 #define ELO_VALUE_K 10.0
 
@@ -44,7 +45,7 @@
 #define QUERY_UPDATEKILLSTREAK "UPDATE `%s` SET `highest_killstreak` = %i, \
 												`highest_killstreak_map` = '%s', \
 												`highest_killstreak_server` = '%s' \
-											 WHERE steamid2 = '%s'; AND `highest_killstreak` <= %i AND `highest_killstreak` > 0"
+											 WHERE steamid2 = '%s' AND `highest_killstreak` <= %i AND `highest_killstreak` > 0;"
 
 #define QUERY_UPDATESCORE "UPDATE `%s` SET \
 											score = greatest(1000 \
@@ -206,6 +207,15 @@ int g_aiLeaderboardScores[MAXPLAYERS];
 
 // for weapons like the ssg which can trigger multiple misses on 1 attack
 bool g_abSSGHitDebounce[MAXPLAYERS];
+
+// for storing the deaths for map-specific death heatmaps (for less query spam)
+// TODO 2.1
+char g_szStoredDeathMap[64];
+int g_iStoredDeathCount = 0;
+int g_aiStoredDeathTime[LIMIT_STORED_DEATHS];
+float g_aflStoredDeathVecX[LIMIT_STORED_DEATHS];
+float g_aflStoredDeathVecY[LIMIT_STORED_DEATHS];
+float g_aflStoredDeathVecZ[LIMIT_STORED_DEATHS];
 
 public Plugin myinfo = {
 	name = "Open Frags",
@@ -1099,7 +1109,7 @@ void Elo_UpdatePlayerElo(int iClient, int iLeaderboardPlace, bool bDebug = false
 	GetClientAuthId(iClient, AuthId_Steam2, szAuth, 32);
 	char szQueryUpdateElo[512];
 	// you gotta be calibrated with the legacy score system first to be able to elo your elo
-	Format(szQueryUpdateElo, 512, "UPDATE `%s` SET `elo`=GREATEST(100, `elo`+%f) WHERE `steamid2`='%s' AND `elo`>0", g_szTable, flEloAdd, szAuth);
+	Format(szQueryUpdateElo, 512, "UPDATE `%s` SET `elo`=GREATEST(100, `elo` + (%f)) WHERE `steamid2`='%s' AND `elo`>0", g_szTable, flEloAdd, szAuth);
 	if(bDebug)
 		PrintToServer("Final query: %s", szQueryUpdateElo);
 	g_hSQL.Query(Callback_UpdatedElo, szQueryUpdateElo, iClient);

@@ -4,18 +4,13 @@
 	{
 		"Version"
 		{
-			"Latest"	"2.0e"
-			"Previous"	"2.0d"
+			"Latest"	"2.0f"
+			"Previous"	"2.0e"
 		}
 		
-		"Notes"	"soo much stuff you can't even imagine!"
-		"Notes"	"now supports duel!! (with a possibility to support more gamemodes later on)"
-		"Notes"	"does not count weapon stats without the openfortress-tools plugin anymore"
-		"Notes"	"re-ordered some translation phrases"
-		"Notes"	"added aliases for chat comands"
-		"Notes"	"hotfixes for elo shit"
-		"Notes"	"MORE hotfixes. we love those"
-		"Notes"	"killstreak fixes"
+		"Notes"	"killstreaks are actually fixed now i promise"
+		"Notes"	"lowered ragequit threshold time"
+		"Notes"	"getting ready for 2.1 aka challenges and death heatmaps"
 	}
 	
 	"Files"
@@ -23,7 +18,6 @@
 		"Patch"
 		{
 			"Plugin"	"Path_SM/plugins/openfrags.smx"
-			"Plugin"	"Path_SM/translations/openfrags.phrases.txt"
 			
 			"Source"	"Path_SM/scripting/openfrags.sp"
 		}
