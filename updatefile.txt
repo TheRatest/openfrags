@@ -4,13 +4,14 @@
 	{
 		"Version"
 		{
-			"Latest"	"2.0f"
-			"Previous"	"2.0e"
+			"Latest"	"2.1"
+			"Previous"	"2.0f"
 		}
 		
-		"Notes"	"killstreaks are actually fixed now i promise"
-		"Notes"	"lowered ragequit threshold time"
-		"Notes"	"getting ready for 2.1 aka challenges and death heatmaps"
+		"Notes"	"killstreaks are still not fixed wtf"
+		"Notes"	"now recording anonymous death data (position, time, map)"
+		"Notes"	"added a command for viewing your cached stats"
+		"Notes"	"challenges will come later"
 	}
 	
 	"Files"

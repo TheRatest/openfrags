@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "2.0f"
+#define PLUGIN_VERSION "2.1"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/main/updatefile.txt"
 #define MIN_LEADERBOARD_HEADSHOTS 15
 #define MIN_LEADERBOARD_SCORE 1000
@@ -198,7 +198,7 @@ bool g_abPlayerNotifiedOfOF[MAXPLAYERS];
 // to not enter an infinite sv_tags change loop
 bool g_bSvTagsChangedDebounce = false;
 
-// dm elo
+// elo caching
 float g_aflElos[MAXPLAYERS];
 // when the round is over sort all the players by frags into this leaderboard
 int g_iLeaderboardPlayers = 0;
@@ -209,7 +209,6 @@ int g_aiLeaderboardScores[MAXPLAYERS];
 bool g_abSSGHitDebounce[MAXPLAYERS];
 
 // for storing the deaths for map-specific death heatmaps (for less query spam)
-// TODO 2.1
 char g_szStoredDeathMap[64];
 int g_iStoredDeathCount = 0;
 int g_aiStoredDeathTime[LIMIT_STORED_DEATHS];
@@ -255,6 +254,7 @@ public void OnPluginStart() {
 	RegConsoleCmd("sm_openfrags_leaderboard", Command_ViewTop, "Alias for sm_openfrags_top");
 	RegConsoleCmd("sm_openfrags_optout", Command_OptOut, "Delete all the data stored associated with the caller and permanently opt out of the stat tracking");
 	RegConsoleCmd("sm_openfrags_eligibility", Command_TestEligibility, "Check for if the server is eligible for stat tracking");
+	RegConsoleCmd("sm_openfrags_debug_data", Command_ViewDebugData, "View your cached stuff");
 
 	RegAdminCmd("sm_openfrags_test_query", Command_TestIncrementField, ADMFLAG_CONVARS, "Run a test query to see if the plugin works. Should only be ran by a user and not the server!");
 	RegAdminCmd("sm_openfrags_test_elo", Command_TestEloUpdateAll, ADMFLAG_CONVARS, "Update everyone's DM elo as if the round ended");
@@ -736,6 +736,7 @@ public void OnMapStart() {
 		g_aiPlayerDeathTime[i] = 0;
 		g_abPlayerDied[i] = false;
 	}
+	GetCurrentMap(g_szStoredDeathMap, 64);
 }
 
 public void OnMapEnd() {
@@ -930,6 +931,49 @@ Action Timer_ResetHitDebounce(Handle hTimer, int iClient) {
 	return Plugin_Handled;
 }
 
+void RecordDeath(int iClient) {
+	if(!IsServerEligibleForStats())
+		return;
+	
+	if(!IsValidEntity(iClient))
+		return;
+	
+	if(iClient < 0 || iClient > MAXPLAYERS)
+		return;
+	
+	if(!IsClientInGame(iClient))
+		return;
+	
+	if(IsFakeClient(iClient))
+		return;
+	
+	// still not tracking you.
+	if(!g_abInitializedClients[iClient])
+		return;
+	
+	int timeDeath = GetTime() - g_timeRoundStart;
+	float vecOrigin[3];
+	GetClientAbsOrigin(iClient, vecOrigin);
+	
+	if(g_iStoredDeathCount+1 >= LIMIT_STORED_DEATHS) {
+		char szInsertDeathsQuery[2048];
+		Format(szInsertDeathsQuery, 2048, "INSERT INTO `%s` (`map`, `round_start_time`, `death_time`, `x`, `y`, `z`) VALUES", g_szTable);
+		for(int i = 0; i < g_iStoredDeathCount; ++i) {
+			Format(szInsertDeathsQuery, 2048, "%s ('%s', %i, %i, %f, %f, %f),", szInsertDeathsQuery, g_szStoredDeathMap, g_timeRoundStart, g_aiStoredDeathTime[i], g_aflStoredDeathVecX[i], g_aflStoredDeathVecY[i], g_aflStoredDeathVecZ[i]);
+		}
+		
+		strcopy(szInsertDeathsQuery, strlen(szInsertDeathsQuery)-1, ";");
+		g_hSQL.Query(Callback_None, szInsertDeathsQuery, 103);
+		g_iStoredDeathCount = 0;
+	}
+	
+	g_aiStoredDeathTime[g_iStoredDeathCount] = timeDeath;
+	g_aflStoredDeathVecX[g_iStoredDeathCount] = vecOrigin[0];
+	g_aflStoredDeathVecY[g_iStoredDeathCount] = vecOrigin[1];
+	g_aflStoredDeathVecZ[g_iStoredDeathCount] = vecOrigin[2];
+	g_iStoredDeathCount++;
+}
+
 void Event_PlayerDeath(Event event, const char[] szEventName, bool bDontBroadcast) {
 	int iVictimId = GetEventInt(event, "userid");
 	int iAttackerId = GetEventInt(event, "attacker");
@@ -967,6 +1011,8 @@ void Event_PlayerDeath(Event event, const char[] szEventName, bool bDontBroadcas
 		
 		g_aiKillstreaks[iClient] += 1;
 	}
+	
+	RecordDeath(iVictim);
 }
 
 public void OnEntityCreated(int iEnt, const char[] szClassname) {
@@ -1888,6 +1934,14 @@ Action Command_ViewElos(int iClient, int iArgs) {
 
 Action Command_ViewTop(int iClient, int iArgs) {
 	PrintTopPlayers(iClient);
+	return Plugin_Handled;
+}
+
+Action Command_ViewDebugData(int iClient, int iArgs){
+	ReplyToCommand(iClient, "[OF] Your Elo: %f", g_aflElos[iClient]);
+	ReplyToCommand(iClient, "[OF] Your killstreak: %i", g_aiKillstreaks[iClient]);
+	ReplyToCommand(iClient, "[OF] Your perfect status: %i", !g_abPlayerDied[iClient]);
+	
 	return Plugin_Handled;
 }
 
