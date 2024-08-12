@@ -45,7 +45,7 @@
 #define QUERY_UPDATEKILLSTREAK "UPDATE `%s` SET `highest_killstreak` = %i, \
 												`highest_killstreak_map` = '%s', \
 												`highest_killstreak_server` = '%s' \
-											 WHERE steamid2 = '%s' AND `highest_killstreak` <= %i AND `highest_killstreak` > 0;"
+											 WHERE steamid2 = '%s' AND `highest_killstreak` < %i;"
 
 #define QUERY_UPDATESCORE "UPDATE `%s` SET \
 											score = greatest(1000 \
@@ -602,14 +602,17 @@ void ResetKillstreak(int iClient) {
 	char szHostname[64];
 	GetCurrentMap(szMap, 64);
 	ConVar cvarHostname = FindConVar("hostname");
-	if(cvarHostname != INVALID_HANDLE)
+	if(IsValidHandle(cvarHostname))
 		GetConVarString(cvarHostname, szHostname, 64);
 	else
 		GetClientName(0, szHostname, 64);
 	
+	char szEscapedHostname[130];
+	SQL_EscapeString(g_hSQL, szHostname, szEscapedHostname, 130)
+	
 	char szQueryUpdateKillstreak[1024];
-	Format(szQueryUpdateKillstreak, 1024, QUERY_UPDATEKILLSTREAK, g_szTable, iKillstreak, szMap, szHostname, szAuth, iKillstreak);
-
+	Format(szQueryUpdateKillstreak, 1024, QUERY_UPDATEKILLSTREAK, g_szTable, iKillstreak, szMap, szEscapedHostname, szAuth, iKillstreak);
+	
 	g_hSQL.Query(Callback_None, szQueryUpdateKillstreak, 1);
 }
 

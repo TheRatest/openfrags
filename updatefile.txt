@@ -8,7 +8,7 @@
 			"Previous"	"2.0f"
 		}
 		
-		"Notes"	"killstreaks are still not fixed wtf"
+		"Notes"	"killstreaks are now hopefully fixed"
 		"Notes"	"now recording anonymous death data (position, time, map)"
 		"Notes"	"added a command for viewing your cached stats"
 		"Notes"	"challenges will come later"
