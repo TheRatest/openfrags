@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "2.1"
+#define PLUGIN_VERSION "2.2"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/main/updatefile.txt"
 #define MIN_LEADERBOARD_HEADSHOTS 15
 #define MIN_LEADERBOARD_SCORE 1000
@@ -16,8 +16,10 @@
 #define RATING_COLOR_TOP100 "{snow}"
 #define RATING_COLOR_UNRANKED "{gray}"
 #define THRESHOLD_RAGEQUIT_TIME 3
+// a duel match must last at least this long before being valid for elo
+#define MIN_ROUND_TIME_DUEL 120
 #define LIMIT_STORED_DEATHS 64
-#define ELO_VALUE_D 400.0
+#define ELO_VALUE_D 200.0
 #define ELO_VALUE_K 10.0
 
 // defining only relatively large queries..
@@ -209,6 +211,7 @@ int g_aiLeaderboardScores[MAXPLAYERS];
 bool g_abSSGHitDebounce[MAXPLAYERS];
 
 // for storing the deaths for map-specific death heatmaps (for less query spam)
+// scrapped feature. for now
 char g_szStoredDeathMap[64];
 int g_iStoredDeathCount = 0;
 int g_aiStoredDeathTime[LIMIT_STORED_DEATHS];
@@ -739,7 +742,6 @@ public void OnMapStart() {
 		g_aiPlayerDeathTime[i] = 0;
 		g_abPlayerDied[i] = false;
 	}
-	GetCurrentMap(g_szStoredDeathMap, 64);
 }
 
 public void OnMapEnd() {
@@ -1015,7 +1017,7 @@ void Event_PlayerDeath(Event event, const char[] szEventName, bool bDontBroadcas
 		g_aiKillstreaks[iClient] += 1;
 	}
 	
-	RecordDeath(iVictim);
+	//RecordDeath(iVictim);
 }
 
 public void OnEntityCreated(int iEnt, const char[] szClassname) {
@@ -1058,6 +1060,7 @@ int Sort_CompareByFrags(int elem1, int elem2, const int[] array, Handle hndl) {
 	return iDiff;
 }
 
+float g_flOverkillCoefficient = 2.0;
 int Elo_MakePlayerLeaderboard(int aiPlayers[MAXPLAYERS], int aiScores[MAXPLAYERS], bool bSort = true, bool bDebug = false) {
 	int iClientCount = 0;
 	for(int i = 1; i < MaxClients; ++i) {
@@ -1101,6 +1104,11 @@ int Elo_MakePlayerLeaderboard(int aiPlayers[MAXPLAYERS], int aiScores[MAXPLAYERS
 	for(int i = 0; i < iClientCount; ++i) {
 		aiScores[i] = GetPlayerFrags(aiPlayers[i]);
 	}
+
+	if(aiScores[1] > 0)
+		g_flOverkillCoefficient = float(aiScores[0]) / float(aiScores[1]);
+	else
+		g_flOverkillCoefficient = 2.0;
 	return iClientCount;
 }
 
@@ -1125,13 +1133,12 @@ float Elo_GetPlayerExpectedScore(int aiPlayers[MAXPLAYERS], int iClientCount, in
 	return flNumerator / float(flDenominator);
 }
 
-float Elo_GetPlayerScore(int aiPlayers[MAXPLAYERS], int iClientCount, int iClientLeaderboardPlace) {
+float Elo_GetPlayerScore(int aiPlayers[MAXPLAYERS], int iClientCount, int iClientLeaderboardPlace, float flBase = 2.0) {
 	if(!g_abInitializedClients[aiPlayers[iClientLeaderboardPlace-1]])
 		return 0.0;
 	if(iClientCount == 2) {
 		return iClientLeaderboardPlace == 1 ? 1.0 : 0.0;
 	}
-	const float flBase = 2.0;
 	float flNumerator = Pow(flBase, float(iClientCount - iClientLeaderboardPlace)) - 1;
 	float flDenominator = 0.0;
 	for(int i = 0; i < iClientCount; ++i) {
@@ -1148,7 +1155,7 @@ void Elo_UpdatePlayerElo(int iClient, int iLeaderboardPlace, bool bDebug = false
 	if(!g_abInitializedClients[iClient])
 		return;
 	
-	float flPlayerScore = Elo_GetPlayerScore(g_aiLeaderboardClients, g_iLeaderboardPlayers, iLeaderboardPlace);
+	float flPlayerScore = Elo_GetPlayerScore(g_aiLeaderboardClients, g_iLeaderboardPlayers, iLeaderboardPlace, g_flOverkillCoefficient);
 	float flExpectedScore = Elo_GetPlayerExpectedScore(g_aiLeaderboardClients, g_iLeaderboardPlayers, iLeaderboardPlace);
 	float flEloAdd = ELO_VALUE_K * (g_iLeaderboardPlayers - 1) * (flPlayerScore - flExpectedScore);
 	if(bDebug)
@@ -1260,6 +1267,10 @@ void Event_RoundEnd(Event event, const char[] szEventName, bool bDontBroadcast) 
 		Elo_UpdateAll();
 	} else {
 		if(g_aiCurrentDuelers[0] < 1 || g_aiCurrentDuelers[1] < 1) {
+			g_bRoundGoing = false;
+			return;
+		}
+		if(GetTime() - g_timeRoundStart < MIN_ROUND_TIME_DUEL) {
 			g_bRoundGoing = false;
 			return;
 		}
@@ -1996,15 +2007,15 @@ Action Command_OptOut(int iClient, int iArgs) {
 	SQL_EscapeString(g_hSQL, szClientName, szClientNameSafe, 64);
 	
 	char szQueryOptOutDelete1[512];
-	Format(szQueryOptOutDelete1, 512, "DELETE FROM stats WHERE steamid2 = '%s';", szAuth);
+	Format(szQueryOptOutDelete1, 512, "DELETE FROM stats WHERE steamid2 = '%s'", szAuth);
 	g_hSQL.Query(Callback_OptOut_RemovedStats, szQueryOptOutDelete1, iClient, DBPrio_High);
 	
 	char szQueryOptOutDelete2[512];
-	Format(szQueryOptOutDelete2, 512, "DELETE FROM stats_duels WHERE steamid2 = '%s';", szAuth);
+	Format(szQueryOptOutDelete2, 512, "DELETE FROM stats_duels WHERE steamid2 = '%s'", szAuth);
 	g_hSQL.Query(Callback_None, szQueryOptOutDelete2, 124, DBPrio_High);
 	
 	char szQueryOptOutBan[512];
-	Format(szQueryOptOutBan, 512, "INSERT INTO bans (steamid2, name, is_banned, ban_reason, timestamp, expiration) VALUES ('%s', '%s', 1, 'In-game opt-out', 0, 0);", szAuth, szClientNameSafe);
+	Format(szQueryOptOutBan, 512, "INSERT INTO bans (steamid2, name, is_banned, ban_reason, timestamp, expiration) VALUES ('%s', '%s', 1, 'In-game opt-out', 0, 0)", szAuth, szClientNameSafe);
 	g_hSQL.Query(Callback_OptOut_AddedBan, szQueryOptOutBan, iClient, DBPrio_High);
 	return Plugin_Handled;
 }
@@ -2017,8 +2028,10 @@ Action Delayed_OptOutCancel(Handle hTimer) {
 void Callback_OptOut_RemovedStats(Database hSQL, DBResultSet hResults, const char[] szErr, any iClientUncasted) {
 	int iClient = view_as<int>(iClientUncasted);
 	if(!IsValidHandle(hSQL) || strlen(szErr) > 0) {
-		if(!g_bThrewOptOutErrorAlready)
+		if(!g_bThrewOptOutErrorAlready) {
 			CPrintToChat(iClient, "%t %t", "OpenFrags ChatPrefix", "OpenFrags Error");
+			PrintToConsole(iClient, "[OF] Error: %s", szErr);
+		}
 			
 		g_bThrewOptOutErrorAlready = true;
 		return;

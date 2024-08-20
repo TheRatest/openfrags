@@ -4,14 +4,13 @@
 	{
 		"Version"
 		{
-			"Latest"	"2.1"
-			"Previous"	"2.0f"
+			"Latest"	"2.2"
+			"Previous"	"2.1"
 		}
 		
-		"Notes"	"killstreaks are now hopefully fixed"
-		"Notes"	"now recording anonymous death data (position, time, map)"
-		"Notes"	"added a command for viewing your cached stats"
-		"Notes"	"challenges will come later"
+		"Notes"	"scrapped death tracking"
+		"Notes"	"DM Elo should now be more accurate"
+		"Notes"	"Duel Elo won't be updated if the round is younger than 2 minutes"
 	}
 	
 	"Files"
