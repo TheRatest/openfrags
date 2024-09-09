@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "2.2"
+#define PLUGIN_VERSION "2.2a"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/main/updatefile.txt"
 #define MIN_LEADERBOARD_HEADSHOTS 15
 #define MIN_LEADERBOARD_SCORE 1000
@@ -463,6 +463,19 @@ bool IsPlayerActive(int iClient) {
 		return false;
 	
 	return ((GetPlayerFrags(iClient) > 0 || g_aiPlayerDamageDealtStore[iClient] > 0) && view_as<TFTeam>(GetClientTeam(iClient)) != TFTeam_Spectator && view_as<TFTeam>(GetClientTeam(iClient)) != TFTeam_Unassigned);
+}
+
+int GetActivePlayerCount() {
+	int c = 0;
+	for(int i = 1; i < MaxClients; ++i) {
+		if(!IsClientInGame(i))
+			continue;
+
+		if(IsPlayerActive(i))
+			c++;
+	}
+
+	return c;
 }
 
 void InitPlayerData(int iClient) {
@@ -1260,7 +1273,7 @@ void Event_RoundEnd(Event event, const char[] szEventName, bool bDontBroadcast) 
 		if(!g_abPlayerJoinedBeforeHalfway[iTop3Client])
 			IncrementField(iTop3Client, "matches");
 	
-		if(!g_abPlayerDied[iTop1Client])
+		if(!g_abPlayerDied[iTop1Client] && IsPlayerActive(iTop1Client) && GetActivePlayerCount() > 1)
 			IncrementField(iTop1Client, "perfects");
 		
 		// Hope this doesn't break absolutely everything..
@@ -1796,15 +1809,17 @@ public Action OnClientSayCommand(int iClient, const char[] szCommand, const char
 	char szArgs[3][64];
 	int iArgs = ExplodeString(szArg, " ", szArgs, 3, 64, true);
 	char szChatCommand[63];
-	strcopy(szChatCommand, 63, szArgs[0][1]);
 	
 	Action retval = Plugin_Continue;
 	if(szArgs[0][0] == '/') {
+		strcopy(szChatCommand, 63, szArgs[0][1]);
 		retval = Plugin_Stop;
 	} else if(szArgs[0][0] == '!') {
+		strcopy(szChatCommand, 63, szArgs[0][1]);
 		retval = Plugin_Continue;
 	} else {
-		return Plugin_Continue;
+		strcopy(szChatCommand, 63, szArgs[0][0]);
+		retval = Plugin_Continue;
 	}
 	
 	if(StrEqual(szChatCommand, "stats", false) && iArgs == 1) {

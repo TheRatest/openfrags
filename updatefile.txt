@@ -4,13 +4,12 @@
 	{
 		"Version"
 		{
-			"Latest"	"2.2"
-			"Previous"	"2.1"
+			"Latest"	"2.2a"
+			"Previous"	"2.2"
 		}
 		
-		"Notes"	"scrapped death tracking"
-		"Notes"	"DM Elo should now be more accurate"
-		"Notes"	"Duel Elo won't be updated if the round is younger than 2 minutes"
+		"Notes"	"Added more checks for perfects"
+		"Notes"	"Chat commands should now be usable without prefixes"
 	}
 	
 	"Files"
