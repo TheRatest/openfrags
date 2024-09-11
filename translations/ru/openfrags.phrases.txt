@@ -1,0 +1,179 @@
+"Phrases"
+{
+	"OpenFrags ChatPrefix"
+	{
+		"ru"			"{mediumpurple}[OF]{default}"
+	}
+	"OpenFrags About"
+	{
+		"ru"			"OpenFrags - это плагин для SourceMod, который позволяет отслеживать и просматривать межсерверную статистику с помощью красивых веб-страниц и команд чата\nПодробнее на openfrags.ohaa.xyz\nВерсия плагина: {1}"
+	}
+	"OpenFrags YourStats"
+	{
+		"ru"			"Ваша статистика: (of.ohaa.xyz/u/{1})"
+	}
+	"OpenFrags PlayerStats"
+	{
+		"ru"			"{default}Статистика {2}{1}{default}: (of.ohaa.xyz/u/{3})"
+	}
+	"OpenFrags StatsError"
+	{
+		"ru"			"При получении статистики произошла ошибка. Попробуйте в другой раз!"
+	}
+	"OpenFrags Error"
+	{
+		"ru"			"При обработке вашего запроса произошла ошибка. Свяжитесь с владельцем сервера или автором плагина, если вы видите это!"
+	}
+	"OpenFrags Notify"
+	{
+		"ru"			"На этом сервере работает OpenFrags (of.ohaa.xyz)! Введите /stats, чтобы увидеть свою статистику, /top, чтобы просмотреть таблицу лидеров, и /optout, чтобы полностью отказаться от отслеживания статистики."
+	}
+	"OpenFrags OptOutConfirm"
+	{
+		"ru"			"Вы собираетесь стереть всю свою статистику и навсегда отказаться от отслеживания. Выполните эту команду ещё раз, чтобы подтвердить"
+	}
+	"OpenFrags OptingOut"
+	{
+		"ru"			"Отказ... (1/2)"
+	}
+	"OpenFrags OptedOut"
+	{
+		"ru"			"Стирание всей статистики и отказ от отслеживания завершён! (2/2)"
+	}
+	"OpenFrags UninitializedSelf"
+	{
+		"ru"			"Ваша статистика сейчас недоступна, вы пробовали заново зайти на сервер?"
+	}
+	"OpenFrags UninitializedPlayer"
+	{
+		"ru"			"Статистика {1} сейчас недоступна"
+	}
+	"OpenFrags StatsPlaytime"
+	{
+		"ru"			"Время игры: {1}.{2} ч."
+	}
+	"OpenFrags StatsKD"
+	{
+		"ru"			"У/С/Р: {1}/{2}/{3}"
+	}
+	"OpenFrags StatsRGHeadshots"
+	{
+		"ru"			"Выстр. в голову рельсотр.: {1} ({2}.{3}%% от общ. числа выстр.)"
+	}
+	"OpenFrags StatsAirshots"
+	{
+		"ru"			"Выстр. в воздухе ракет./гранатом.: {1}/{2}"
+	}
+	"OpenFrags StatsSSG"
+	{
+		"ru"			"Выстр. в тело/обычн./промахов супердроб.: {1}/{2}/{3}"
+	}
+	"OpenFrags StatsMeleeAndPowerupKills"
+	{
+		"ru"			"Убийств ближн. бою/под бонусом: {1}/{2}"
+	}
+	"OpenFrags StatsHighestKillstreak"
+	{
+		"ru"			"Длинная серия убийств: {1} уб. на {2}"
+	}
+	"OpenFrags StatsMatches"
+	{
+		"ru"			"Побед/3-ка лидеров/матчи: {1}/{2}/{3}"
+	}
+	"OpenFrags StatsDamage"
+	{
+		"ru"			"Нанесённый/полученный урон: {1}/{2}"
+	}
+	"OpenFrags StatsRating"
+	{
+		"ru"			"Ранг {3}[№ {2}]{default}: {1}"
+	}
+	"OpenFrags TopPlayers"
+	{
+		"ru"			"Лучшие игроки: (of.ohaa.xyz/top)"
+	}
+	"OpenFrags TopFragger"
+	{
+		"ru"			"{default}Макс. убийств: {2}{1} {default}- {3} уб."
+	}
+	"OpenFrags TopHeadshotter"
+	{
+		"ru"			"{default}Выстр. в голову рельсотр. %%: {2}{1} {default}- {3}.{4}%% от общ. числа выстр."
+	}
+	"OpenFrags TopKillstreaker"
+	{
+		"ru"			"{default}Длинная серия уб.: {2}{1} {default}- {3} уб. на {4}"
+	}
+	"OpenFrags TopSSGer"
+	{
+		"ru"			"{default}Выстр. в тело супердроб.: {2}{1} {default}- {3} ({4}.{5}%% от общ. числа выстр.)"
+	}
+	"OpenFrags TopDamager"
+	{
+		"ru"			"{default}Макс. нанесённый урон: {2}{1} {default}- {3}"
+	}
+	"OpenFrags TopWinnerCount"
+	{
+		"ru"			"{default}Победы: {2}{1} {default}- {3} поб."
+	}
+	"OpenFrags TopWinnerRate"
+	{
+		"ru"			"{default}Макс. доля побед: {2}{1} {default}- {3}.{4}%% (всего побед: {5})"
+	}
+	"OpenFrags TopRating"
+	{
+		"ru"			"{default}Самый высокий ранг: {2}{1} {default}- {3}"
+	}
+	"OpenFrags TopPlaytime"
+	{
+		"ru"			"{default}Самое длинное время игры: {2}{1} {default}- {3}.{4} ч."
+	}
+	"OpenFrags YourElo"
+	{
+		"ru"			"Ваше Эло в бое насмерть: {1}"
+	}
+	"OpenFrags PlayerElo"
+	{
+		"ru"			"{default}Эло {2}{1}{default} в бое насмерть: {1}"
+	}
+	"OpenFrags PlayersElos"
+	{
+		"ru"			"Эло в бое насмерть текущих игроков:"
+	}
+	"OpenFrags PlayersElo"
+	{
+		"ru"			"{1}. {3}{2} {default}- {4}"
+	}
+	"OpenFrags-Duels RoundStartElos"
+	{
+		"ru"			"{2}{1} {default}({3}) VS {5}{4} {default}({6})"
+	}
+	"OpenFrags-Duels YourElo"
+	{
+		"ru"			"Ваше дуэльное Эло: {1}"
+	}
+	"OpenFrags-Duels PlayerElo"
+	{
+		"ru"			"{default}Дуэльное Эло {2}{1}{default}: {1}"
+	}
+	"OpenFrags-Duels StatsMatches"
+	{
+		"ru"			"Побед/матчей: {1}/{2}"
+	}
+	"OpenFrags-Duels PlayersElos"
+	{
+		"ru"			"Дуэльное Эло текущих игроков:"
+	}
+	"OpenFrags-Duels PlayersElo"
+	{
+		"ru"			"{1}. {3}{2} {default}- {4}"
+	}
+	"OpenFrags-Duels Leaderboard"
+	{
+		"ru"			"Таблица лидеров дуэлянтов Эло:"
+	}
+	"OpenFrags-Duels LeaderboardPlayer"
+	{
+		"ru"			"{1}. {3}{2} {default}- {4}"
+	}
+}
