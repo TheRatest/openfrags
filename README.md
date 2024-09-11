@@ -60,5 +60,5 @@ Below is an example of how an entry can look like:
 This should be the same as compling any other SourceMod plugin, but you need to have [morecolors.inc](https://forums.alliedmods.net/showthread.php?t=185016) in open_fortress/addons/sourcemod/scripting/include/
 
 # Extra credits
-@OhaDerErste - Website (https://of.ohaa.xyz)
+@OhaDerErste - Website (https://of.ohaa.xyz)  
 @Blueberryy - Russian translation
