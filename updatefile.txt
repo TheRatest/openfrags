@@ -4,12 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"	"2.2a"
-			"Previous"	"2.2"
+			"Latest"	"2.2b"
+			"Previous"	"2.2a"
 		}
 		
-		"Notes"	"Added more checks for perfects"
-		"Notes"	"Chat commands should now be usable without prefixes"
+		"Notes"	"Russian translation (thanks @Blueberryy!)"
 	}
 	
 	"Files"
@@ -17,12 +16,14 @@
 		"Patch"
 		{
 			"Plugin"	"Path_SM/plugins/openfrags.smx"
+			"Plugin"	"Path_SM/translations/ru/openfrags.phrases.txt"
 			
 			"Source"	"Path_SM/scripting/openfrags.sp"
 		}
 		
 		"Plugin"	"Path_SM/plugins/openfrags.smx"
 		"Plugin"	"Path_SM/translations/openfrags.phrases.txt"
+		"Plugin"	"Path_SM/translations/ru/openfrags.phrases.txt"
 		
 		"Source"	"Path_SM/scripting/openfrags.sp"
 	}
