@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"	"2.2b"
-			"Previous"	"2.2a"
+			"Latest"	"2.2c"
+			"Previous"	"2.2b"
 		}
 		
-		"Notes"	"Russian translation (thanks @Blueberryy!)"
+		"Notes"	"Less console spam"
 	}
 	
 	"Files"

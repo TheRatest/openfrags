@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "2.2b"
+#define PLUGIN_VERSION "2.2c"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/main/updatefile.txt"
 #define MIN_LEADERBOARD_HEADSHOTS 15
 #define MIN_LEADERBOARD_SCORE 1000
@@ -1077,7 +1077,9 @@ float g_flOverkillCoefficient = 2.0;
 int Elo_MakePlayerLeaderboard(int aiPlayers[MAXPLAYERS], int aiScores[MAXPLAYERS], bool bSort = true, bool bDebug = false) {
 	int iClientCount = 0;
 	for(int i = 1; i < MaxClients; ++i) {
-		PrintToServer("Checking client %i", i);
+		if(bDebug)
+			PrintToServer("Checking client %i for temp leaderboard", i);
+		
 		if(!IsClientInGame(i)) {
 			if(bDebug)
 				PrintToServer("Client %i is not in game, skipping", i);
