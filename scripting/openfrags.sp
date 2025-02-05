@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "2.2c"
+#define PLUGIN_VERSION "2.2d"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/main/updatefile.txt"
 #define MIN_LEADERBOARD_HEADSHOTS 15
 #define MIN_LEADERBOARD_SCORE 1000
@@ -35,14 +35,6 @@
 												);"
 
 #define QUERY_UPDATEPLAYER "UPDATE `%s` SET `name`='%s', `color`=%i, `join_count`=`join_count`+1 WHERE `steamid2`='%s'"
-
-/*
-#define QUERY_UPDATERATES "UPDATE `%s` SET \
-											`kdr` = (`frags` / GREATEST(`deaths`, 1)), \
-											`railgun_headshotrate` = (`railgun_headshots` / GREATEST(`railgun_headshots` + `railgun_bodyshots` + `railgun_misses`, 1)), \
-											`winrate` = (`wins` / GREATEST(`matches`, 1)) \
-										WHERE steamid2='%s';"
-*/
 
 #define QUERY_UPDATEKILLSTREAK "UPDATE `%s` SET `highest_killstreak` = %i, \
 												`highest_killstreak_map` = '%s', \
@@ -142,6 +134,8 @@
 										AS mmmm \
 									WHERE steamid2='%s';"
 
+#define QUERY_GRANTACHIEVEMENT "INSERT INTO `achievements` (`steamid2`, `timestamp`, `achievement_id`) VALUES ('%s', CURRENT_TIME(), %i) WHERE NOT EXISTS (SELECT * FROM `achievements` WHERE `steamid2`='%s', `achievement_id`=%i);"
+
 enum {
 	OFMutator_None = 0,
 	OFMutator_Instagib = 1,
@@ -164,6 +158,18 @@ enum {
 	
 	OFGamemode_Count
 }
+
+// TODO: implement all this shit
+enum {
+	IDAchievement_OpenFortressDev = 0, // bah
+	IDAchievement_OpenFragsDev = 1, // gah
+	IDAchievement_Perfect = 2, // getting a "perfect" medal
+	IDAchievement_RatingTop10 = 3, // ever getting in the top 10 rating
+	IDAchievement_DoubleAirshot = 4, // getting 2 chinalake/RL airshots in a row
+	IDAchievement_HolyShit = 5, // getting a "holy shit" medal	
+	
+	IDAchievement_Count
+};
 
 // this global variable list is so damn long
 
@@ -1275,8 +1281,10 @@ void Event_RoundEnd(Event event, const char[] szEventName, bool bDontBroadcast) 
 		if(!g_abPlayerJoinedBeforeHalfway[iTop3Client])
 			IncrementField(iTop3Client, "matches");
 	
-		if(!g_abPlayerDied[iTop1Client] && IsPlayerActive(iTop1Client) && GetActivePlayerCount() > 1)
+		if(!g_abPlayerDied[iTop1Client] && IsPlayerActive(iTop1Client) && GetActivePlayerCount() > 1) {
 			IncrementField(iTop1Client, "perfects");
+			GrantPlayerAchievement(iTop1Client, IDAchievement_Perfect);
+		}
 		
 		// Hope this doesn't break absolutely everything..
 		Elo_UpdateAll();
@@ -1506,7 +1514,7 @@ void PrintTopPlayers(int iClient) {
 	char szQuery[512];
 	
 	// only once all the queries have finished the player will get the leaderboard
-	Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `score` FROM `%s` WHERE `score` = (SELECT MAX(`score`) FROM `%s`) AND `score`>=%i ORDER BY `score` DESC;", g_szTable, g_szTable, MIN_LEADERBOARD_SCORE);
+	Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `rating` FROM `%s` WHERE `rating` = (SELECT MAX(`rating`) FROM `%s`) AND `score`>=%i ORDER BY `rating` DESC;", g_szTable, g_szTable, MIN_LEADERBOARD_SCORE);
 	g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopRated, szQuery, iClient);
 	
 	Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `frags` FROM `%s` WHERE (`frags` = (SELECT MAX(`frags`) FROM `%s`)) AND `score`>=%i ORDER BY `frags` DESC;", g_szTable, g_szTable, MIN_LEADERBOARD_SCORE);
@@ -1525,7 +1533,7 @@ void PrintTopPlayers(int iClient) {
 void Callback_PrintTopPlayers_ReceivedTopRated(Database hSQL, DBResultSet hResults, const char[] szErr, any iClient) {
 	if(hResults.RowCount < 1) {
 		char szQuery[512];
-		Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `score` FROM `%s` WHERE `score` = (SELECT MAX(`score`) FROM `%s`) ORDER BY score DESC;", g_szTable, g_szTable);
+		Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `rating` FROM `%s` WHERE `rating` = (SELECT MAX(`rating`) FROM `%s`) ORDER BY rating DESC;", g_szTable, g_szTable);
 		g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopRated, szQuery, iClient);
 		return;
 	}
@@ -2225,6 +2233,16 @@ void Event_DmGamemodeChanged(ConVar cvarGamemode, const char[] szOld, const char
 Action Delayed_SvTagsChangedDebounce(Handle hTimer) {
 	g_bSvTagsChangedDebounce = false;
 	return Plugin_Handled;
+}
+
+void GrantPlayerAchievement(int iClient, int nAchievementID) {
+	char szAuth[32];
+	GetClientAuthId(iClient, AuthId_Steam2, szAuth, 32);
+
+	char szQuery[512];
+	Format(szQuery, 512, QUERY_GRANTACHIEVEMENT, szAuth, nAchievementID, szAuth, nAchievementID);
+
+	g_hSQL.Query(Callback_None, szQuery, 226, DBPrio_Low);
 }
 	
 void AddServerTagRat(char[] strTag) {

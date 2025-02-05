@@ -7,17 +7,17 @@
 	"OpenFrags About"
 	{
 		"#format"		"{1:s}"
-		"en"			"OpenFrags is a SourceMod plugin that enables cross-server stat tracking and viewing using fancy web pages and chat commands\nLearn more at openfrags.ohaa.xyz\nPlugin version: {1}"
+		"en"			"OpenFrags is a SourceMod plugin that enables cross-server stat tracking and viewing using fancy web pages and chat commands\nLearn more at openfrags.org\nPlugin version: {1}"
 	}
 	"OpenFrags YourStats"
 	{
 		"#format"		"{1:s}"
-		"en"			"Your stats: (of.ohaa.xyz/u/{1})"
+		"en"			"Your stats: (openfrags.org/u/{1})"
 	}
 	"OpenFrags PlayerStats"
 	{
 		"#format"		"{1:s},{2:s},{3:s}"
-		"en"			"{2}{1}{default}'s stats: (of.ohaa.xyz/u/{3})"
+		"en"			"{2}{1}{default}'s stats: (openfrags.org/u/{3})"
 	}
 	"OpenFrags StatsError"
 	{
@@ -29,7 +29,7 @@
 	}
 	"OpenFrags Notify"
 	{
-		"en"			"This server is running OpenFrags (of.ohaa.xyz)! Type /stats to see your stats, /top to view the leaderboard and /optout to completely opt out of the stat tracking"
+		"en"			"This server is running OpenFrags (openfrags.org)! Type /stats to see your stats, /top to view the leaderboard and /optout to completely opt out of the stat tracking"
 	}
 	"OpenFrags OptOutConfirm"
 	{
@@ -104,7 +104,7 @@
 	}
 	"OpenFrags TopPlayers"
 	{
-		"en"			"Top players: (of.ohaa.xyz/top)"
+		"en"			"Top players: (openfrags.org/top)"
 	}
 	"OpenFrags TopFragger"
 	{

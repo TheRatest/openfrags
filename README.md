@@ -5,7 +5,7 @@ More info at http://openfrags.ohaa.xyz
 
 #### Console variables:
 ```
-sm_openfrags_announce_elos [0 or 1] (Default: 1) - Announce player ELOs each time a round starts
+sm_openfrags_announce_elos [0 or 1] (Default: 1) - Announce player ELOs in Duel each time a round starts
 ```
 
 #### Server commands:

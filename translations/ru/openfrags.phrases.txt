@@ -10,11 +10,11 @@
 	}
 	"OpenFrags YourStats"
 	{
-		"ru"			"Ваша статистика: (of.ohaa.xyz/u/{1})"
+		"ru"			"Ваша статистика: (openfrags.org/u/{1})"
 	}
 	"OpenFrags PlayerStats"
 	{
-		"ru"			"{default}Статистика {2}{1}{default}: (of.ohaa.xyz/u/{3})"
+		"ru"			"{default}Статистика {2}{1}{default}: (openfrags.org/u/{3})"
 	}
 	"OpenFrags StatsError"
 	{
@@ -26,7 +26,7 @@
 	}
 	"OpenFrags Notify"
 	{
-		"ru"			"На этом сервере работает OpenFrags (of.ohaa.xyz)! Введите /stats, чтобы увидеть свою статистику, /top, чтобы просмотреть таблицу лидеров, и /optout, чтобы полностью отказаться от отслеживания статистики."
+		"ru"			"На этом сервере работает OpenFrags (openfrags.org)! Введите /stats, чтобы увидеть свою статистику, /top, чтобы просмотреть таблицу лидеров, и /optout, чтобы полностью отказаться от отслеживания статистики."
 	}
 	"OpenFrags OptOutConfirm"
 	{
@@ -90,7 +90,7 @@
 	}
 	"OpenFrags TopPlayers"
 	{
-		"ru"			"Лучшие игроки: (of.ohaa.xyz/top)"
+		"ru"			"Лучшие игроки: (openfrags.org/top)"
 	}
 	"OpenFrags TopFragger"
 	{
