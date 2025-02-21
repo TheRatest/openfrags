@@ -4,12 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"	"2.2d"
-			"Previous"	"2.2c"
+			"Latest"	"2.2e"
+			"Previous"	"2.2d"
 		}
 		
-		"Notes"	"Fixed !top score/rating bug"
-		"Notes"	"Made a base for achievements"
+		"Notes"	"Fixed !top"
 	}
 	
 	"Files"
@@ -17,8 +16,6 @@
 		"Patch"
 		{
 			"Plugin"	"Path_SM/plugins/openfrags.smx"
-			"Plugin"	"Path_SM/translations/openfrags.phrases.txt"
-			"Plugin"	"Path_SM/translations/ru/openfrags.phrases.txt"
 			
 			"Source"	"Path_SM/scripting/openfrags.sp"
 		}

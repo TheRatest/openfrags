@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "2.2d"
+#define PLUGIN_VERSION "2.2e"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/main/updatefile.txt"
 #define MIN_LEADERBOARD_HEADSHOTS 15
 #define MIN_LEADERBOARD_SCORE 1000
@@ -1514,7 +1514,7 @@ void PrintTopPlayers(int iClient) {
 	char szQuery[512];
 	
 	// only once all the queries have finished the player will get the leaderboard
-	Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `rating` FROM `%s` WHERE `rating` = (SELECT MAX(`rating`) FROM `%s`) AND `score`>=%i ORDER BY `rating` DESC;", g_szTable, g_szTable, MIN_LEADERBOARD_SCORE);
+	Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `elo` FROM `%s` WHERE `elo` = (SELECT MAX(`elo`) FROM `%s`) AND `score`>=%i ORDER BY `elo` DESC;", g_szTable, g_szTable, MIN_LEADERBOARD_SCORE);
 	g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopRated, szQuery, iClient);
 	
 	Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `frags` FROM `%s` WHERE (`frags` = (SELECT MAX(`frags`) FROM `%s`)) AND `score`>=%i ORDER BY `frags` DESC;", g_szTable, g_szTable, MIN_LEADERBOARD_SCORE);
@@ -1533,7 +1533,7 @@ void PrintTopPlayers(int iClient) {
 void Callback_PrintTopPlayers_ReceivedTopRated(Database hSQL, DBResultSet hResults, const char[] szErr, any iClient) {
 	if(hResults.RowCount < 1) {
 		char szQuery[512];
-		Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `rating` FROM `%s` WHERE `rating` = (SELECT MAX(`rating`) FROM `%s`) ORDER BY rating DESC;", g_szTable, g_szTable);
+		Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `elo` FROM `%s` WHERE `elo` = (SELECT MAX(`elo`) FROM `%s`) ORDER BY elo DESC;", g_szTable, g_szTable);
 		g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopRated, szQuery, iClient);
 		return;
 	}
