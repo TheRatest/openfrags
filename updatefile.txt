@@ -4,11 +4,13 @@
 	{
 		"Version"
 		{
-			"Latest"	"2.2e"
-			"Previous"	"2.2d"
+			"Latest"	"2.3"
+			"Previous"	"2.2e"
 		}
 		
-		"Notes"	"Fixed !top"
+		"Notes"	"Plugin support for monthly stats"
+		"Notes"	"Increased ELO gain/loss per match"
+		"Notes"	"Removed some unused features from code"
 	}
 	
 	"Files"

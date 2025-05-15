@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "2.2e"
+#define PLUGIN_VERSION "2.3"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/main/updatefile.txt"
 #define MIN_LEADERBOARD_HEADSHOTS 15
 #define MIN_LEADERBOARD_SCORE 1000
@@ -18,9 +18,8 @@
 #define THRESHOLD_RAGEQUIT_TIME 3
 // a duel match must last at least this long before being valid for elo
 #define MIN_ROUND_TIME_DUEL 120
-#define LIMIT_STORED_DEATHS 64
 #define ELO_VALUE_D 200.0
-#define ELO_VALUE_K 10.0
+#define ELO_VALUE_K 20.0
 
 // defining only relatively large queries..
 #define QUERY_INSERTPLAYER "INSERT IGNORE INTO `%s` (\
@@ -30,6 +29,19 @@
 												)\
 												VALUES (\
 												'%s', \
+												'%s', \
+												%i\
+												);"
+
+#define QUERY_INSERTPLAYER_MONTHLY "INSERT IGNORE INTO `%s` (\
+												`steamid2`, \
+												`year_month`, \
+												`name`,\
+												`elo`\
+												)\
+												VALUES (\
+												'%s', \
+												%s, \
 												'%s', \
 												%i\
 												);"
@@ -134,8 +146,6 @@
 										AS mmmm \
 									WHERE steamid2='%s';"
 
-#define QUERY_GRANTACHIEVEMENT "INSERT INTO `achievements` (`steamid2`, `timestamp`, `achievement_id`) VALUES ('%s', CURRENT_TIME(), %i) WHERE NOT EXISTS (SELECT * FROM `achievements` WHERE `steamid2`='%s', `achievement_id`=%i);"
-
 enum {
 	OFMutator_None = 0,
 	OFMutator_Instagib = 1,
@@ -158,18 +168,6 @@ enum {
 	
 	OFGamemode_Count
 }
-
-// TODO: implement all this shit
-enum {
-	IDAchievement_OpenFortressDev = 0, // bah
-	IDAchievement_OpenFragsDev = 1, // gah
-	IDAchievement_Perfect = 2, // getting a "perfect" medal
-	IDAchievement_RatingTop10 = 3, // ever getting in the top 10 rating
-	IDAchievement_DoubleAirshot = 4, // getting 2 chinalake/RL airshots in a row
-	IDAchievement_HolyShit = 5, // getting a "holy shit" medal	
-	
-	IDAchievement_Count
-};
 
 // this global variable list is so damn long
 
@@ -215,15 +213,6 @@ int g_aiLeaderboardScores[MAXPLAYERS];
 
 // for weapons like the ssg which can trigger multiple misses on 1 attack
 bool g_abSSGHitDebounce[MAXPLAYERS];
-
-// for storing the deaths for map-specific death heatmaps (for less query spam)
-// scrapped feature. for now
-char g_szStoredDeathMap[64];
-int g_iStoredDeathCount = 0;
-int g_aiStoredDeathTime[LIMIT_STORED_DEATHS];
-float g_aflStoredDeathVecX[LIMIT_STORED_DEATHS];
-float g_aflStoredDeathVecY[LIMIT_STORED_DEATHS];
-float g_aflStoredDeathVecZ[LIMIT_STORED_DEATHS];
 
 public Plugin myinfo = {
 	name = "Open Frags",
@@ -352,7 +341,7 @@ void Callback_ConnectionCheck(Handle hSQL, Handle hResults, const char[] szErr, 
 
 		LogError("<!> There was an error while checking the connection to the OpenFrags DB: %s", szErr);
 	}
-	
+
 	CreateTimer(60.0, Loop_ConnectionCheck);
 }
 
@@ -534,6 +523,12 @@ void Callback_InitPlayerData_ReceivedBanStatus(Database hSQL, DBResultSet hResul
 	char szQueryInsertNewPlayer[512];
 	Format(szQueryInsertNewPlayer, 512, QUERY_INSERTPLAYER, g_szTable, szAuth, szClientNameSafe, g_bDuels ? 1000 : 0);
 	g_hSQL.Query(Callback_InitPlayerData_InsertedPlayer, szQueryInsertNewPlayer, iClient, DBPrio_High);
+
+	// another insert for the monthly stats
+	char szMonthlyTable[32];
+	Format(szMonthlyTable, 32, "%s_monthly", g_szTable);
+	Format(szQueryInsertNewPlayer, 512, QUERY_INSERTPLAYER_MONTHLY, szMonthlyTable, szAuth, "DATE_FORMAT(NOW(), '%Y_%m')", szClientNameSafe, 1000);
+	g_hSQL.Query(Callback_None, szQueryInsertNewPlayer, iClient, DBPrio_High);
 }
 
 void Callback_InitPlayerData_InsertedPlayer(Database hSQL, DBResultSet hResults, const char[] szErr, any iClientUncasted) {
@@ -635,6 +630,13 @@ void ResetKillstreak(int iClient) {
 	char szQueryUpdateKillstreak[1024];
 	Format(szQueryUpdateKillstreak, 1024, QUERY_UPDATEKILLSTREAK, g_szTable, iKillstreak, szMap, szEscapedHostname, szAuth, iKillstreak);
 	
+	g_hSQL.Query(Callback_None, szQueryUpdateKillstreak, 1);
+
+	// monthly killstreak
+	char szMonthlyTable[32];
+	Format(szMonthlyTable, 32, "%s_monthly", g_szTable);
+	Format(szQueryUpdateKillstreak, 1024, QUERY_UPDATEKILLSTREAK, szMonthlyTable, iKillstreak, szMap, szEscapedHostname, szAuth, iKillstreak);
+
 	g_hSQL.Query(Callback_None, szQueryUpdateKillstreak, 1);
 }
 
@@ -955,49 +957,6 @@ Action Timer_ResetHitDebounce(Handle hTimer, int iClient) {
 	return Plugin_Handled;
 }
 
-void RecordDeath(int iClient) {
-	if(!IsServerEligibleForStats())
-		return;
-	
-	if(!IsValidEntity(iClient))
-		return;
-	
-	if(iClient < 0 || iClient > MAXPLAYERS)
-		return;
-	
-	if(!IsClientInGame(iClient))
-		return;
-	
-	if(IsFakeClient(iClient))
-		return;
-	
-	// still not tracking you.
-	if(!g_abInitializedClients[iClient])
-		return;
-	
-	int timeDeath = GetTime() - g_timeRoundStart;
-	float vecOrigin[3];
-	GetClientAbsOrigin(iClient, vecOrigin);
-	
-	if(g_iStoredDeathCount+1 >= LIMIT_STORED_DEATHS) {
-		char szInsertDeathsQuery[2048];
-		Format(szInsertDeathsQuery, 2048, "INSERT INTO `%s` (`map`, `round_start_time`, `death_time`, `x`, `y`, `z`) VALUES", g_szTable);
-		for(int i = 0; i < g_iStoredDeathCount; ++i) {
-			Format(szInsertDeathsQuery, 2048, "%s ('%s', %i, %i, %f, %f, %f),", szInsertDeathsQuery, g_szStoredDeathMap, g_timeRoundStart, g_aiStoredDeathTime[i], g_aflStoredDeathVecX[i], g_aflStoredDeathVecY[i], g_aflStoredDeathVecZ[i]);
-		}
-		
-		strcopy(szInsertDeathsQuery, strlen(szInsertDeathsQuery)-1, ";");
-		g_hSQL.Query(Callback_None, szInsertDeathsQuery, 103);
-		g_iStoredDeathCount = 0;
-	}
-	
-	g_aiStoredDeathTime[g_iStoredDeathCount] = timeDeath;
-	g_aflStoredDeathVecX[g_iStoredDeathCount] = vecOrigin[0];
-	g_aflStoredDeathVecY[g_iStoredDeathCount] = vecOrigin[1];
-	g_aflStoredDeathVecZ[g_iStoredDeathCount] = vecOrigin[2];
-	g_iStoredDeathCount++;
-}
-
 void Event_PlayerDeath(Event event, const char[] szEventName, bool bDontBroadcast) {
 	int iVictimId = GetEventInt(event, "userid");
 	int iAttackerId = GetEventInt(event, "attacker");
@@ -1035,8 +994,6 @@ void Event_PlayerDeath(Event event, const char[] szEventName, bool bDontBroadcas
 		
 		g_aiKillstreaks[iClient] += 1;
 	}
-	
-	//RecordDeath(iVictim);
 }
 
 public void OnEntityCreated(int iEnt, const char[] szClassname) {
@@ -1283,7 +1240,6 @@ void Event_RoundEnd(Event event, const char[] szEventName, bool bDontBroadcast) 
 	
 		if(!g_abPlayerDied[iTop1Client] && IsPlayerActive(iTop1Client) && GetActivePlayerCount() > 1) {
 			IncrementField(iTop1Client, "perfects");
-			GrantPlayerAchievement(iTop1Client, IDAchievement_Perfect);
 		}
 		
 		// Hope this doesn't break absolutely everything..
@@ -1520,7 +1476,7 @@ void PrintTopPlayers(int iClient) {
 	Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `frags` FROM `%s` WHERE (`frags` = (SELECT MAX(`frags`) FROM `%s`)) AND `score`>=%i ORDER BY `frags` DESC;", g_szTable, g_szTable, MIN_LEADERBOARD_SCORE);
 	g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopFragger, szQuery, iClient);
 
-	Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `railgun_headshotrate`, `railgun_headshots`, `railgun_bodyshots`, `railgun_misses` FROM `%s` WHERE `railgun_headshots`>=%i AND `score`>=%i ORDER BY `railgun_headshotrate` DESC;", g_szTable, MIN_LEADERBOARD_HEADSHOTS, MIN_LEADERBOARD_SCORE);
+	Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `railgun_headshots`, `railgun_bodyshots`, `railgun_misses` FROM `%s` WHERE `railgun_headshots`>=%i AND `score`>=%i ORDER BY (`railgun_headshots` / (`railgun_headshots` + `railgun_bodyshots` + `railgun_misses` + 1)) DESC;", g_szTable, MIN_LEADERBOARD_HEADSHOTS, MIN_LEADERBOARD_SCORE);
 	g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopHeadshotter, szQuery, iClient);
 
 	Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `highest_killstreak`, `highest_killstreak_map`, `highest_killstreak_server` FROM `%s` WHERE (`highest_killstreak` = (SELECT MAX(`highest_killstreak`) FROM `%s`)) AND `score`>= %i ORDER BY `highest_killstreak` DESC;", g_szTable, g_szTable, MIN_LEADERBOARD_SCORE);
@@ -1571,7 +1527,7 @@ void Callback_PrintTopPlayers_ReceivedTopFragger(Database hSQL, DBResultSet hRes
 void Callback_PrintTopPlayers_ReceivedTopHeadshotter(Database hSQL, DBResultSet hResults, const char[] szErr, any iClient) {
 	if(hResults.RowCount < 1) {
 		char szQuery[512];
-		Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `railgun_headshotrate`, `railgun_headshots`, `railgun_bodyshots`, `railgun_misses` FROM `%s` ORDER BY `railgun_headshotrate` DESC;", g_szTable);
+		Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `railgun_headshots`, `railgun_bodyshots`, `railgun_misses` FROM `%s` ORDER BY (`railgun_headshots` / (`railgun_headshots` + `railgun_bodyshots` + `railgun_misses` + 1)) DESC;", g_szTable);
 		g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopHeadshotter, szQuery, iClient);
 		return;
 	}
@@ -1814,7 +1770,6 @@ void Callback_PrintPlayerElos_Finish(Database hSQL, DBResultSet hResults, const 
 	}
 }
 
-
 public Action OnClientSayCommand(int iClient, const char[] szCommand, const char[] szArg) {
 	char szArgs[3][64];
 	int iArgs = ExplodeString(szArg, " ", szArgs, 3, 64, true);
@@ -2031,13 +1986,18 @@ Action Command_OptOut(int iClient, int iArgs) {
 	GetClientName(iClient, szClientName, 64);
 	SQL_EscapeString(g_hSQL, szClientName, szClientNameSafe, 64);
 	
-	char szQueryOptOutDelete1[512];
-	Format(szQueryOptOutDelete1, 512, "DELETE FROM stats WHERE steamid2 = '%s'", szAuth);
-	g_hSQL.Query(Callback_OptOut_RemovedStats, szQueryOptOutDelete1, iClient, DBPrio_High);
+	char szQueryOptOutDelete[512];
+	Format(szQueryOptOutDelete, 512, "DELETE FROM stats WHERE steamid2 = '%s'", szAuth);
+	g_hSQL.Query(Callback_OptOut_RemovedStats, szQueryOptOutDelete, iClient, DBPrio_High);
 	
-	char szQueryOptOutDelete2[512];
-	Format(szQueryOptOutDelete2, 512, "DELETE FROM stats_duels WHERE steamid2 = '%s'", szAuth);
-	g_hSQL.Query(Callback_None, szQueryOptOutDelete2, 124, DBPrio_High);
+	Format(szQueryOptOutDelete, 512, "DELETE FROM stats_duels WHERE steamid2 = '%s'", szAuth);
+	g_hSQL.Query(Callback_None, szQueryOptOutDelete, 124, DBPrio_High);
+
+	Format(szQueryOptOutDelete, 512, "DELETE FROM stats_monthly WHERE steamid2 = '%s'", szAuth);
+	g_hSQL.Query(Callback_None, szQueryOptOutDelete, 124, DBPrio_High);
+
+	Format(szQueryOptOutDelete, 512, "DELETE FROM stats_duels_monthly WHERE steamid2 = '%s'", szAuth);
+	g_hSQL.Query(Callback_None, szQueryOptOutDelete, 124, DBPrio_High);
 	
 	char szQueryOptOutBan[512];
 	Format(szQueryOptOutBan, 512, "INSERT INTO bans (steamid2, name, is_banned, ban_reason, timestamp, expiration) VALUES ('%s', '%s', 1, 'In-game opt-out', 0, 0)", szAuth, szClientNameSafe);
@@ -2234,16 +2194,6 @@ Action Delayed_SvTagsChangedDebounce(Handle hTimer) {
 	g_bSvTagsChangedDebounce = false;
 	return Plugin_Handled;
 }
-
-void GrantPlayerAchievement(int iClient, int nAchievementID) {
-	char szAuth[32];
-	GetClientAuthId(iClient, AuthId_Steam2, szAuth, 32);
-
-	char szQuery[512];
-	Format(szQuery, 512, QUERY_GRANTACHIEVEMENT, szAuth, nAchievementID, szAuth, nAchievementID);
-
-	g_hSQL.Query(Callback_None, szQuery, 226, DBPrio_Low);
-}
 	
 void AddServerTagRat(char[] strTag) {
 	ConVar cvarTags = FindConVar("sv_tags");
@@ -2254,13 +2204,11 @@ void AddServerTagRat(char[] strTag) {
 	int iTagLen = strlen(strTag);
 	
 	bool bFoundTag = StrContains(strServTags, strTag, false) != -1;
-	if(bFoundTag) {
+	if(bFoundTag)
 		return;
-	}
 
-	if(iServTagsLen + iTagLen+1 > 127) {
+	if(iServTagsLen + iTagLen+1 > 127)
 		return;
-	}
 	
 	strServTags[iServTagsLen] = ',';
 	strcopy(strServTags[iServTagsLen + 1], 64, strTag);
@@ -2277,9 +2225,8 @@ stock void RemoveServerTagRat(char[] strTag) {
 	GetConVarString(cvarTags, strServTags, 128);
 	
 	int iFoundTagAt = StrContains(strServTags, strTag, false);
-	if(iFoundTagAt == -1) {
+	if(iFoundTagAt == -1)
 		return;
-	}
 	
 	ReplaceString(strServTags, 128, strTag, "", false);
 	ReplaceString(strServTags, 128, ",,", ",", false);
