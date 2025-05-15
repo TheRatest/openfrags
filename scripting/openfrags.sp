@@ -15,7 +15,6 @@
 #define RATING_COLOR_TOP10 "{immortal}"
 #define RATING_COLOR_TOP100 "{snow}"
 #define RATING_COLOR_UNRANKED "{gray}"
-#define THRESHOLD_RAGEQUIT_TIME 3
 // a duel match must last at least this long before being valid for elo
 #define MIN_ROUND_TIME_DUEL 120
 #define ELO_VALUE_D 200.0
@@ -175,6 +174,7 @@ Database g_hSQL;
 bool g_bDuels = false;
 int g_aiCurrentDuelers[2];
 char g_szTable[32];
+char g_szTableMonthly[32];
 ConVar g_cvarNotifyElos = null;
 
 bool g_bFirstConnectionEstabilished = false;
@@ -191,8 +191,6 @@ int g_aiPlayerJoinTimes[MAXPLAYERS];
 // saving bandwith by storing the damage and sending a query with all of it at once
 int g_aiPlayerDamageDealtStore[MAXPLAYERS];
 int g_aiPlayerDamageTakenStore[MAXPLAYERS];
-// for deciding if a disconnect is a ragequit or not
-int g_aiPlayerDeathTime[MAXPLAYERS];
 // stat tracking eligiblity
 bool g_abPlayerJoinedBeforeHalfway[MAXPLAYERS];
 bool g_bRoundGoing = true;
@@ -235,12 +233,19 @@ public void OnPluginStart() {
 	
 	ConVar cvarDmGamemode = FindConVar("of_dm_gamemode");
 	if(IsValidHandle(cvarDmGamemode)) {
-		if(cvarDmGamemode.IntValue != OFGamemode_Duel)
+		if(cvarDmGamemode.IntValue != OFGamemode_Duel) {
 			strcopy(g_szTable, 32, "stats");
-		else
+			strcopy(g_szTableMonthly, 32, "stats_monthly");
+		}
+		else {
 			strcopy(g_szTable, 32, "stats_duels");
-	} else
+			strcopy(g_szTableMonthly, 32, "stats_duels_monthly")
+		}
+
+	} else {
 		strcopy(g_szTable, 32, "stats");
+		strcopy(g_szTableMonthly, 32, "stats_monthly");
+	}
 		
 	g_cvarNotifyElos = CreateConVar("sm_openfrags_announce_elos", "1", "Announce player ELOs each time a round starts", 0, true, 0.0, true, 1.0);
 	
@@ -525,9 +530,7 @@ void Callback_InitPlayerData_ReceivedBanStatus(Database hSQL, DBResultSet hResul
 	g_hSQL.Query(Callback_InitPlayerData_InsertedPlayer, szQueryInsertNewPlayer, iClient, DBPrio_High);
 
 	// another insert for the monthly stats
-	char szMonthlyTable[32];
-	Format(szMonthlyTable, 32, "%s_monthly", g_szTable);
-	Format(szQueryInsertNewPlayer, 512, QUERY_INSERTPLAYER_MONTHLY, szMonthlyTable, szAuth, "DATE_FORMAT(NOW(), '%Y_%m')", szClientNameSafe, 1000);
+	Format(szQueryInsertNewPlayer, 512, QUERY_INSERTPLAYER_MONTHLY, g_szTableMonthly, szAuth, "DATE_FORMAT(NOW(), '%Y_%m')", szClientNameSafe, 1000);
 	g_hSQL.Query(Callback_None, szQueryInsertNewPlayer, iClient, DBPrio_High);
 }
 
@@ -633,9 +636,7 @@ void ResetKillstreak(int iClient) {
 	g_hSQL.Query(Callback_None, szQueryUpdateKillstreak, 1);
 
 	// monthly killstreak
-	char szMonthlyTable[32];
-	Format(szMonthlyTable, 32, "%s_monthly", g_szTable);
-	Format(szQueryUpdateKillstreak, 1024, QUERY_UPDATEKILLSTREAK, szMonthlyTable, iKillstreak, szMap, szEscapedHostname, szAuth, iKillstreak);
+	Format(szQueryUpdateKillstreak, 1024, QUERY_UPDATEKILLSTREAK, g_szTableMonthly, iKillstreak, szMap, szEscapedHostname, szAuth, iKillstreak);
 
 	g_hSQL.Query(Callback_None, szQueryUpdateKillstreak, 1);
 }
@@ -738,15 +739,11 @@ void Event_PlayerDisconnect(Event event, const char[] szEventName, bool bDontBro
 	
 	if(g_abPlayerJoinedBeforeHalfway[iClient] && IsRoundHalfwayDone() && g_bRoundGoing && (StrContains(szDisconectReason, "timed out", false) == -1 && StrContains(szDisconectReason, "kicked", false) == -1 && StrContains(szDisconectReason, "connection closing", false) == -1))
 		IncrementField(iClient, "matches");
-
-	if(g_aiPlayerDeathTime[iClient] + THRESHOLD_RAGEQUIT_TIME > GetTime())
-		IncrementField(iClient, "ragequits");
 	
 	ResetKillstreak(iClient);
 	UpdateStoredStats(iClient);
 	g_abInitializedClients[iClient] = false;
 	g_aiPlayerJoinTimes[iClient] = 0;
-	g_aiPlayerDeathTime[iClient] = 0;
 	g_aflElos[iClient] = 0.0;
 	g_abPlayerJoinedBeforeHalfway[iClient] = false;
 	g_abPlayerNotifiedOfOF[iClient] = false;
@@ -760,7 +757,6 @@ public void OnMapStart() {
 	g_nCurrentRoundGamemode = GetConVarInt(FindConVar("of_dm_gamemode"));
 	for(int i = 0; i < MAXPLAYERS; ++i) {
 		g_aiKillstreaks[i] = 0;
-		g_aiPlayerDeathTime[i] = 0;
 		g_abPlayerDied[i] = false;
 	}
 }
@@ -784,7 +780,6 @@ void Event_RoundStart(Event event, char[] szEventName, bool bDontBroadcast) {
 	g_nCurrentRoundGamemode = GetConVarInt(FindConVar("of_dm_gamemode"));
 	for(int i = 0; i < MAXPLAYERS; ++i) {
 		g_aiKillstreaks[i] = 0;
-		g_aiPlayerDeathTime[i] = 0;
 		g_abPlayerDied[i] = false;
 		if(i < MaxClients)
 			g_abPlayerJoinedBeforeHalfway[i] = true;
@@ -969,7 +964,6 @@ void Event_PlayerDeath(Event event, const char[] szEventName, bool bDontBroadcas
 	GetEventString(event, "weapon", szWeapon, 128);
 	
 	IncrementField(iVictim, "deaths");
-	g_aiPlayerDeathTime[iVictim] = GetTime();
 	ResetKillstreak(iVictim);
 	g_abPlayerDied[iVictim] = true;
 	
@@ -1215,7 +1209,6 @@ void Event_RoundEnd(Event event, const char[] szEventName, bool bDontBroadcast) 
 		if(g_abPlayerJoinedBeforeHalfway[i] && IsPlayerActive(i))
 			IncrementField(i, "matches");
 		
-		g_aiPlayerDeathTime[i] = 0;
 		ResetKillstreak(i);
 		UpdateStoredStats(i);
 	}
@@ -1470,116 +1463,156 @@ void PrintTopPlayers(int iClient) {
 	char szQuery[512];
 	
 	// only once all the queries have finished the player will get the leaderboard
-	Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `elo` FROM `%s` WHERE `elo` = (SELECT MAX(`elo`) FROM `%s`) AND `score`>=%i ORDER BY `elo` DESC;", g_szTable, g_szTable, MIN_LEADERBOARD_SCORE);
+	Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `elo` FROM `%s` WHERE `score`>=%i ORDER BY `elo` DESC;", g_szTableMonthly, MIN_LEADERBOARD_SCORE);
 	g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopRated, szQuery, iClient);
 	
-	Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `frags` FROM `%s` WHERE (`frags` = (SELECT MAX(`frags`) FROM `%s`)) AND `score`>=%i ORDER BY `frags` DESC;", g_szTable, g_szTable, MIN_LEADERBOARD_SCORE);
+	Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `frags` FROM `%s` WHERE `score`>=%i ORDER BY `frags` DESC;", g_szTableMonthly, MIN_LEADERBOARD_SCORE);
 	g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopFragger, szQuery, iClient);
 
-	Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `railgun_headshots`, `railgun_bodyshots`, `railgun_misses` FROM `%s` WHERE `railgun_headshots`>=%i AND `score`>=%i ORDER BY (`railgun_headshots` / (`railgun_headshots` + `railgun_bodyshots` + `railgun_misses` + 1)) DESC;", g_szTable, MIN_LEADERBOARD_HEADSHOTS, MIN_LEADERBOARD_SCORE);
+	Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `railgun_headshots`, `railgun_bodyshots`, `railgun_misses` FROM `%s` WHERE `railgun_headshots`>=%i AND `score`>=%i ORDER BY (`railgun_headshots` / (`railgun_headshots` + `railgun_bodyshots` + `railgun_misses` + 1)) DESC;", g_szTableMonthly, MIN_LEADERBOARD_HEADSHOTS, MIN_LEADERBOARD_SCORE);
 	g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopHeadshotter, szQuery, iClient);
 
-	Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `highest_killstreak`, `highest_killstreak_map`, `highest_killstreak_server` FROM `%s` WHERE (`highest_killstreak` = (SELECT MAX(`highest_killstreak`) FROM `%s`)) AND `score`>= %i ORDER BY `highest_killstreak` DESC;", g_szTable, g_szTable, MIN_LEADERBOARD_SCORE);
+	Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `highest_killstreak`, `highest_killstreak_map`, `highest_killstreak_server` FROM `%s` WHERE `score`>= %i ORDER BY `highest_killstreak` DESC;", g_szTableMonthly, MIN_LEADERBOARD_SCORE);
 	g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopKillstreaker, szQuery, iClient);
 	
-	Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `playtime` FROM `%s` WHERE (`playtime` = (SELECT MAX(`playtime`) FROM `%s`)) AND `score`>= %i ORDER BY `playtime` DESC;", g_szTable, g_szTable, MIN_LEADERBOARD_SCORE);
+	Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `playtime` FROM `%s` WHERE `score`>= %i ORDER BY `playtime` DESC;", g_szTableMonthly, MIN_LEADERBOARD_SCORE);
 	g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopPlaytimer, szQuery, iClient);
 }
 
 void Callback_PrintTopPlayers_ReceivedTopRated(Database hSQL, DBResultSet hResults, const char[] szErr, any iClient) {
 	if(hResults.RowCount < 1) {
 		char szQuery[512];
-		Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `elo` FROM `%s` WHERE `elo` = (SELECT MAX(`elo`) FROM `%s`) ORDER BY elo DESC;", g_szTable, g_szTable);
+		Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `elo` FROM `%s` ORDER BY elo DESC;", g_szTableMonthly);
 		g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopRated, szQuery, iClient);
 		return;
 	}
+
 	SQL_FetchRow(hResults);
 	hResults.FetchString(1, szBestRated, 64);
 	ColorIntToHex(hResults.FetchInt(2), szBestRatedColor);
 	iMostRating = hResults.FetchInt(3);
-	if(strlen(szBestRated) > MAX_LEADERBOARD_NAME_LENGTH)
-		strcopy(szBestRated[MAX_LEADERBOARD_NAME_LENGTH-5], 4, "...");
+
+	TruncateTopPlayerName(szBestRated);
 		
 	iBestRatedQ++;
-	if(iBestRatedQ > 0 && iBestFraggerQ > 0 && iBestHeadshotterQ && iBestKillstreakerQ > 0 && iBestPlaytimerQ > 0)
+	if(CheckReceivedAllTopPlayers())
 		PrintTopPlayers_Finish(view_as<int>(iClient));
 }
 
 void Callback_PrintTopPlayers_ReceivedTopFragger(Database hSQL, DBResultSet hResults, const char[] szErr, any iClient) {
 	if(hResults.RowCount < 1) {
 		char szQuery[512];
-		Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `frags` FROM `%s` WHERE (`frags` = (SELECT MAX(`frags`) FROM `%s`)) ORDER BY `frags` DESC;", g_szTable, g_szTable);
+		Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `frags` FROM `%s` ORDER BY `frags` DESC;", g_szTableMonthly);
 		g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopFragger, szQuery, iClient);
 		return;
 	}
+
 	SQL_FetchRow(hResults);
 	hResults.FetchString(1, szBestFragger, 64);
 	ColorIntToHex(hResults.FetchInt(2), szBestFraggerColor);
 	iMostFrags = hResults.FetchInt(3);
-	if(strlen(szBestFragger) > MAX_LEADERBOARD_NAME_LENGTH)
-		strcopy(szBestFragger[MAX_LEADERBOARD_NAME_LENGTH-5], 4, "...");
+
+	TruncateTopPlayerName(szBestFragger);
 		
 	iBestFraggerQ++;
-	if(iBestRatedQ > 0 && iBestFraggerQ > 0 && iBestHeadshotterQ && iBestKillstreakerQ > 0 && iBestPlaytimerQ > 0)
+	if(CheckReceivedAllTopPlayers())
 		PrintTopPlayers_Finish(view_as<int>(iClient));
 }
 
 void Callback_PrintTopPlayers_ReceivedTopHeadshotter(Database hSQL, DBResultSet hResults, const char[] szErr, any iClient) {
 	if(hResults.RowCount < 1) {
 		char szQuery[512];
-		Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `railgun_headshots`, `railgun_bodyshots`, `railgun_misses` FROM `%s` ORDER BY (`railgun_headshots` / (`railgun_headshots` + `railgun_bodyshots` + `railgun_misses` + 1)) DESC;", g_szTable);
-		g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopHeadshotter, szQuery, iClient);
+		Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `railgun_headshots`, `railgun_bodyshots`, `railgun_misses` FROM `%s` WHERE `score`>=%i ORDER BY (`railgun_headshots` / (`railgun_headshots` + `railgun_bodyshots` + `railgun_misses` + 1)) DESC;", g_szTableMonthly, MIN_LEADERBOARD_SCORE);
+		g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopHeadshotter2, szQuery, iClient);
 		return;
 	}
+
 	SQL_FetchRow(hResults);
 	hResults.FetchString(1, szBestHeadshotter, 64);
 	ColorIntToHex(hResults.FetchInt(2), szBestHeadshotterColor);
-	flBestHSRate = hResults.FetchFloat(3);
-	if(strlen(szBestHeadshotter) > MAX_LEADERBOARD_NAME_LENGTH)
-		strcopy(szBestHeadshotter[MAX_LEADERBOARD_NAME_LENGTH-5], 4, "...");
+	float flRGTotalShots = 0.0 + hResults.FetchInt(3) + hResults.FetchInt(4) + hResults.FetchInt(5);
+	if(flRGTotalShots <= 0.0)
+		flRGTotalShots = 1.0;
+	flBestHSRate = hResults.FetchInt(3) / flRGTotalShots;
+
+	TruncateTopPlayerName(szBestHeadshotter);
 	
 	iBestHeadshotterQ++;
-	if(iBestRatedQ > 0 && iBestFraggerQ > 0 && iBestHeadshotterQ && iBestKillstreakerQ > 0 && iBestPlaytimerQ > 0)
+	if(CheckReceivedAllTopPlayers())
+		PrintTopPlayers_Finish(view_as<int>(iClient));
+}
+
+void Callback_PrintTopPlayers_ReceivedTopHeadshotter2(Database hSQL, DBResultSet hResults, const char[] szErr, any iClient) {
+	if(hResults.RowCount < 1) {
+		char szQuery[512];
+		Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `railgun_headshots`, `railgun_bodyshots`, `railgun_misses` FROM `%s` WHERE ORDER BY (`railgun_headshots` / (`railgun_headshots` + `railgun_bodyshots` + `railgun_misses` + 1)) DESC;", g_szTableMonthly);
+		g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopHeadshotter2, szQuery, iClient);
+		return;
+	}
+
+	SQL_FetchRow(hResults);
+	hResults.FetchString(1, szBestHeadshotter, 64);
+	ColorIntToHex(hResults.FetchInt(2), szBestHeadshotterColor);
+	float flRGTotalShots = 0.0 + hResults.FetchInt(3) + hResults.FetchInt(4) + hResults.FetchInt(5);
+	if(flRGTotalShots <= 0.0)
+		flRGTotalShots = 1.0;
+	flBestHSRate = hResults.FetchInt(3) / flRGTotalShots;
+
+	TruncateTopPlayerName(szBestHeadshotter);
+
+	iBestHeadshotterQ++;
+	if(CheckReceivedAllTopPlayers())
 		PrintTopPlayers_Finish(view_as<int>(iClient));
 }
 
 void Callback_PrintTopPlayers_ReceivedTopKillstreaker(Database hSQL, DBResultSet hResults, const char[] szErr, any iClient) {
 	if(hResults.RowCount < 1) {
 		char szQuery[512];
-		Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `highest_killstreak`, `highest_killstreak_map`, `highest_killstreak_server` FROM `%s` WHERE (`highest_killstreak` = (SELECT MAX(`highest_killstreak`) FROM `%s`)) ORDER BY `highest_killstreak` DESC;", g_szTable, g_szTable);
+		Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `highest_killstreak`, `highest_killstreak_map`, `highest_killstreak_server` FROM `%s` ORDER BY `highest_killstreak` DESC;", g_szTableMonthly);
 		g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopKillstreaker, szQuery, iClient);
 		return;
 	}
+
 	SQL_FetchRow(hResults);
 	hResults.FetchString(1, szBestKillstreaker, 64);
 	ColorIntToHex(hResults.FetchInt(2), szBestKillstreakerColor);
 	iBestKillstreak = hResults.FetchInt(3);
 	hResults.FetchString(4, szBestKillstreakerMap, 64);
-	if(strlen(szBestKillstreaker) > MAX_LEADERBOARD_NAME_LENGTH)
-		strcopy(szBestKillstreaker[MAX_LEADERBOARD_NAME_LENGTH-5], 4, "...");
+
+	TruncateTopPlayerName(szBestKillstreaker);
 	
 	iBestKillstreakerQ++;
-	if(iBestRatedQ > 0 && iBestFraggerQ > 0 && iBestHeadshotterQ && iBestKillstreakerQ > 0 && iBestPlaytimerQ > 0)
+	if(CheckReceivedAllTopPlayers())
 		PrintTopPlayers_Finish(view_as<int>(iClient));
 }
 
 void Callback_PrintTopPlayers_ReceivedTopPlaytimer(Database hSQL, DBResultSet hResults, const char[] szErr, any iClient) {
 	if(hResults.RowCount < 1) {
 		char szQuery[512];
-		Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `playtime` FROM `%s` WHERE (`playtime` = (SELECT MAX(`playtime`) FROM `%s`) ORDER BY `playtime` DESC;", g_szTable, g_szTable);
+		Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `playtime` FROM `%s` ORDER BY `playtime` DESC;", g_szTableMonthly);
 		g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopPlaytimer, szQuery, iClient);
 		return;
 	}
+
 	SQL_FetchRow(hResults);
 	hResults.FetchString(1, szBestPlaytimer, 64);
 	ColorIntToHex(hResults.FetchInt(2), szBestPlaytimerColor);
 	flMostPlaytimeHours = hResults.FetchInt(3) / 3600.0;
-	if(strlen(szBestPlaytimer) > MAX_LEADERBOARD_NAME_LENGTH)
-		strcopy(szBestPlaytimer[MAX_LEADERBOARD_NAME_LENGTH-5], 4, "...");
+
+	TruncateTopPlayerName(szBestPlaytimer);
 	
 	iBestPlaytimerQ++;
-	if(iBestRatedQ > 0 && iBestFraggerQ > 0 && iBestHeadshotterQ && iBestKillstreakerQ > 0 && iBestPlaytimerQ > 0)
+	if(CheckReceivedAllTopPlayers())
 		PrintTopPlayers_Finish(view_as<int>(iClient));
+}
+
+void TruncateTopPlayerName(char[] szName) {
+	if(strlen(szName) > MAX_LEADERBOARD_NAME_LENGTH)
+		strcopy(szName[MAX_LEADERBOARD_NAME_LENGTH-5], 4, "...");
+}
+
+bool CheckReceivedAllTopPlayers() {
+	return (iBestRatedQ > 0 && iBestFraggerQ > 0 && iBestHeadshotterQ && iBestKillstreakerQ > 0 && iBestPlaytimerQ > 0);
 }
 
 void PrintTopPlayers_Finish(int iClient) {

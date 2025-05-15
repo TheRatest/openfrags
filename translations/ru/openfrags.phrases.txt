@@ -90,7 +90,7 @@
 	}
 	"OpenFrags TopPlayers"
 	{
-		"ru"			"Лучшие игроки: (openfrags.org/top)"
+		"ru"			"Лучшие игроки месяца: (openfrags.org/top)"
 	}
 	"OpenFrags TopFragger"
 	{

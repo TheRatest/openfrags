@@ -104,7 +104,7 @@
 	}
 	"OpenFrags TopPlayers"
 	{
-		"en"			"Top players: (openfrags.org/top)"
+		"en"			"Top monthly players: (openfrags.org/top)"
 	}
 	"OpenFrags TopFragger"
 	{

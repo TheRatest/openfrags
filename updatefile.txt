@@ -9,8 +9,10 @@
 		}
 		
 		"Notes"	"Plugin support for monthly stats"
+		"Notes"	"/top is now monthly"
 		"Notes"	"Increased ELO gain/loss per match"
 		"Notes"	"Removed some unused features from code"
+		"Notes"	"Internal code improvements"
 	}
 	
 	"Files"
