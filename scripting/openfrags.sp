@@ -5,7 +5,7 @@
 #include <morecolors>
 #include <updater>
 
-#define PLUGIN_VERSION "2.3"
+#define PLUGIN_VERSION "2.3a"
 #define UPDATE_URL "http://insecuregit.ohaa.xyz/ratest/openfrags/raw/branch/main/updatefile.txt"
 #define MIN_LEADERBOARD_HEADSHOTS 15
 #define MIN_LEADERBOARD_SCORE 1000
@@ -459,6 +459,9 @@ bool IsRoundHalfwayDone() {
 }
 
 bool IsPlayerActive(int iClient) {
+	if(iClient == 0)
+		return false;
+
 	if(view_as<TFTeam>(GetClientTeam(iClient)) == TFTeam_Unassigned)
 		return false;
 	
