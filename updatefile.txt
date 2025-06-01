@@ -4,11 +4,11 @@
 	{
 		"Version"
 		{
-			"Latest"	"2.3a"
-			"Previous"	"2.3"
+			"Latest"	"2.3b"
+			"Previous"	"2.3a"
 		}
 		
-		"Notes"	"IsPlayerActive bugfix"
+		"Notes"	"!top monthly fix"
 	}
 	
 	"Files"
