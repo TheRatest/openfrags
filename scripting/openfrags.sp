@@ -1466,26 +1466,26 @@ void PrintTopPlayers(int iClient) {
 	char szQuery[512];
 	
 	// only once all the queries have finished the player will get the leaderboard
-	Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `elo` FROM `%s` WHERE `score`>=%i AND `year_month`=DATE_FORMAT(NOW(), '%Y_%m') ORDER BY `elo` DESC;", g_szTableMonthly, MIN_LEADERBOARD_SCORE);
+	Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `elo` FROM `%s` WHERE `score`>=%i AND `year_month`=DATE_FORMAT(NOW(), '%%Y_%%m') ORDER BY `elo` DESC;", g_szTableMonthly, MIN_LEADERBOARD_SCORE);
 	g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopRated, szQuery, iClient);
 	
-	Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `frags` FROM `%s` WHERE `score`>=%i AND `year_month`=DATE_FORMAT(NOW(), '%Y_%m') ORDER BY `frags` DESC;", g_szTableMonthly, MIN_LEADERBOARD_SCORE);
+	Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `frags` FROM `%s` WHERE `score`>=%i AND `year_month`=DATE_FORMAT(NOW(), '%%Y_%%m') ORDER BY `frags` DESC;", g_szTableMonthly, MIN_LEADERBOARD_SCORE);
 	g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopFragger, szQuery, iClient);
 
-	Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `railgun_headshots`, `railgun_bodyshots`, `railgun_misses` FROM `%s` WHERE `railgun_headshots`>=%i AND `score`>=%i AND `year_month`=DATE_FORMAT(NOW(), '%Y_%m') ORDER BY (`railgun_headshots` / (`railgun_headshots` + `railgun_bodyshots` + `railgun_misses` + 1)) DESC;", g_szTableMonthly, MIN_LEADERBOARD_HEADSHOTS, MIN_LEADERBOARD_SCORE);
+	Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `railgun_headshots`, `railgun_bodyshots`, `railgun_misses` FROM `%s` WHERE `railgun_headshots`>=%i AND `score`>=%i AND `year_month`=DATE_FORMAT(NOW(), '%%Y_%%m') ORDER BY (`railgun_headshots` / (`railgun_headshots` + `railgun_bodyshots` + `railgun_misses` + 1)) DESC;", g_szTableMonthly, MIN_LEADERBOARD_HEADSHOTS, MIN_LEADERBOARD_SCORE);
 	g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopHeadshotter, szQuery, iClient);
 
-	Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `highest_killstreak`, `highest_killstreak_map`, `highest_killstreak_server` FROM `%s` WHERE `score`>= %i AND `year_month`=DATE_FORMAT(NOW(), '%Y_%m') ORDER BY `highest_killstreak` DESC;", g_szTableMonthly, MIN_LEADERBOARD_SCORE);
+	Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `highest_killstreak`, `highest_killstreak_map`, `highest_killstreak_server` FROM `%s` WHERE `score`>= %i AND `year_month`=DATE_FORMAT(NOW(), '%%Y_%%m') ORDER BY `highest_killstreak` DESC;", g_szTableMonthly, MIN_LEADERBOARD_SCORE);
 	g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopKillstreaker, szQuery, iClient);
 	
-	Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `playtime` FROM `%s` WHERE `score`>= %i AND `year_month`=DATE_FORMAT(NOW(), '%Y_%m') ORDER BY `playtime` DESC;", g_szTableMonthly, MIN_LEADERBOARD_SCORE);
+	Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `playtime` FROM `%s` WHERE `score`>= %i AND `year_month`=DATE_FORMAT(NOW(), '%%Y_%%m') ORDER BY `playtime` DESC;", g_szTableMonthly, MIN_LEADERBOARD_SCORE);
 	g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopPlaytimer, szQuery, iClient);
 }
 
 void Callback_PrintTopPlayers_ReceivedTopRated(Database hSQL, DBResultSet hResults, const char[] szErr, any iClient) {
 	if(hResults.RowCount < 1) {
 		char szQuery[512];
-		Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `elo` FROM `%s` WHERE `year_month`=DATE_FORMAT(NOW(), '%Y_%m') ORDER BY elo DESC;", g_szTableMonthly);
+		Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `elo` FROM `%s` WHERE `year_month`=DATE_FORMAT(NOW(), '%%Y_%%m') ORDER BY elo DESC;", g_szTableMonthly);
 		g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopRated, szQuery, iClient);
 		return;
 	}
@@ -1505,7 +1505,7 @@ void Callback_PrintTopPlayers_ReceivedTopRated(Database hSQL, DBResultSet hResul
 void Callback_PrintTopPlayers_ReceivedTopFragger(Database hSQL, DBResultSet hResults, const char[] szErr, any iClient) {
 	if(hResults.RowCount < 1) {
 		char szQuery[512];
-		Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `frags` FROM `%s` WHERE `year_month`=DATE_FORMAT(NOW(), '%Y_%m') ORDER BY `frags` DESC;", g_szTableMonthly);
+		Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `frags` FROM `%s` WHERE `year_month`=DATE_FORMAT(NOW(), '%%Y_%%m') ORDER BY `frags` DESC;", g_szTableMonthly);
 		g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopFragger, szQuery, iClient);
 		return;
 	}
@@ -1525,7 +1525,7 @@ void Callback_PrintTopPlayers_ReceivedTopFragger(Database hSQL, DBResultSet hRes
 void Callback_PrintTopPlayers_ReceivedTopHeadshotter(Database hSQL, DBResultSet hResults, const char[] szErr, any iClient) {
 	if(hResults.RowCount < 1) {
 		char szQuery[512];
-		Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `railgun_headshots`, `railgun_bodyshots`, `railgun_misses` FROM `%s` WHERE `score`>=%i AND `year_month`=DATE_FORMAT(NOW(), '%Y_%m') ORDER BY (`railgun_headshots` / (`railgun_headshots` + `railgun_bodyshots` + `railgun_misses` + 1)) DESC;", g_szTableMonthly, MIN_LEADERBOARD_SCORE);
+		Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `railgun_headshots`, `railgun_bodyshots`, `railgun_misses` FROM `%s` WHERE `score`>=%i AND `year_month`=DATE_FORMAT(NOW(), '%%Y_%%m') ORDER BY (`railgun_headshots` / (`railgun_headshots` + `railgun_bodyshots` + `railgun_misses` + 1)) DESC;", g_szTableMonthly, MIN_LEADERBOARD_SCORE);
 		g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopHeadshotter2, szQuery, iClient);
 		return;
 	}
@@ -1548,7 +1548,7 @@ void Callback_PrintTopPlayers_ReceivedTopHeadshotter(Database hSQL, DBResultSet 
 void Callback_PrintTopPlayers_ReceivedTopHeadshotter2(Database hSQL, DBResultSet hResults, const char[] szErr, any iClient) {
 	if(hResults.RowCount < 1) {
 		char szQuery[512];
-		Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `railgun_headshots`, `railgun_bodyshots`, `railgun_misses` FROM `%s` WHERE `year_month`=DATE_FORMAT(NOW(), '%Y_%m') ORDER BY (`railgun_headshots` / (`railgun_headshots` + `railgun_bodyshots` + `railgun_misses` + 1)) DESC;", g_szTableMonthly);
+		Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `railgun_headshots`, `railgun_bodyshots`, `railgun_misses` FROM `%s` WHERE `year_month`=DATE_FORMAT(NOW(), '%%Y_%%m') ORDER BY (`railgun_headshots` / (`railgun_headshots` + `railgun_bodyshots` + `railgun_misses` + 1)) DESC;", g_szTableMonthly);
 		g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopHeadshotter2, szQuery, iClient);
 		return;
 	}
@@ -1571,7 +1571,7 @@ void Callback_PrintTopPlayers_ReceivedTopHeadshotter2(Database hSQL, DBResultSet
 void Callback_PrintTopPlayers_ReceivedTopKillstreaker(Database hSQL, DBResultSet hResults, const char[] szErr, any iClient) {
 	if(hResults.RowCount < 1) {
 		char szQuery[512];
-		Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `highest_killstreak`, `highest_killstreak_map`, `highest_killstreak_server` FROM `%s` WHERE `year_month`=DATE_FORMAT(NOW(), '%Y_%m') ORDER BY `highest_killstreak` DESC;", g_szTableMonthly);
+		Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `highest_killstreak`, `highest_killstreak_map`, `highest_killstreak_server` FROM `%s` WHERE `year_month`=DATE_FORMAT(NOW(), '%%Y_%%m') ORDER BY `highest_killstreak` DESC;", g_szTableMonthly);
 		g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopKillstreaker, szQuery, iClient);
 		return;
 	}
@@ -1592,7 +1592,7 @@ void Callback_PrintTopPlayers_ReceivedTopKillstreaker(Database hSQL, DBResultSet
 void Callback_PrintTopPlayers_ReceivedTopPlaytimer(Database hSQL, DBResultSet hResults, const char[] szErr, any iClient) {
 	if(hResults.RowCount < 1) {
 		char szQuery[512];
-		Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `playtime` FROM `%s` WHERE `year_month`=DATE_FORMAT(NOW(), '%Y_%m') ORDER BY `playtime` DESC;", g_szTableMonthly);
+		Format(szQuery, 512, "SELECT `steamid2`, `name`, `color`, `playtime` FROM `%s` WHERE `year_month`=DATE_FORMAT(NOW(), '%%Y_%%m') ORDER BY `playtime` DESC;", g_szTableMonthly);
 		g_hSQL.Query(Callback_PrintTopPlayers_ReceivedTopPlaytimer, szQuery, iClient);
 		return;
 	}
